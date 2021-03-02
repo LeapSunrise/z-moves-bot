@@ -272,7 +272,8 @@ def links_menu(call):
                                          reply_markup=keyboard_generator.generate_default_keyboard_row(
                                              (add_password_button, confirm_button),
                                              (cancel_button,)),
-                                         parse_mode='HTML')
+                                         parse_mode='HTML',
+                                         disable_web_page_preview=True)
 
                     elif user_links_dict[call.message.chat.id]['password'] != '':
                         bot.send_message(call.message.chat.id,
@@ -283,7 +284,8 @@ def links_menu(call):
                                          reply_markup=keyboard_generator.generate_default_keyboard_row(
                                              (change_password_button, confirm_button),
                                              (cancel_button,)),
-                                         parse_mode='HTML')
+                                         parse_mode='HTML',
+                                         disable_web_page_preview=True)
 
                     db.set_state(call.message.from_user.username,
                                  stateworker.States.S_CHANGE_LINK.value,
@@ -319,7 +321,8 @@ def links_menu(call):
                                               chat_id=call.message.chat.id,
                                               message_id=call.message.message_id,
                                               reply_markup=inline_confirm_cancel_keyboard,
-                                              parse_mode='HTML')
+                                              parse_mode='HTML',
+                                              disable_web_page_preview=True)
 
                     elif user_links_dict[call.message.chat.id]['password'] != '':
                         bot.edit_message_text(f"Ты удаляешь:\n"
@@ -330,7 +333,8 @@ def links_menu(call):
                                               chat_id=call.message.chat.id,
                                               message_id=call.message.message_id,
                                               reply_markup=inline_confirm_cancel_keyboard,
-                                              parse_mode='HTML')
+                                              parse_mode='HTML',
+                                              disable_web_page_preview=True)
 
     elif call.data == 'confirm_remove_link':
         bot.delete_message(chat_id=call.message.chat.id,
@@ -343,7 +347,8 @@ def links_menu(call):
                          f"<b>{user_links_dict[call.message.chat.id]['subject']}</b>' "
                          f"успешно удалена.",
                          reply_markup=keyboard_generator.main_menu_keyboard,
-                         parse_mode='HTML')
+                         parse_mode='HTML',
+                         disable_web_page_preview=True)
 
     elif call.data == 'cancel_remove_link':
         bot.edit_message_text("Выбери предмет для удаления ссылки",
@@ -375,7 +380,8 @@ def input_link(message):
                          f"Ссылка для <b>'{user_links_dict[message.chat.id]['subject_type']}</b> - "
                          f"<b>{user_links_dict[message.chat.id]['subject']}'</b> успешно добавлена.",
                          reply_markup=keyboard_generator.main_menu_keyboard,
-                         parse_mode='HTML')
+                         parse_mode='HTML',
+                         disable_web_page_preview=True)
         db.add_link(message.chat.id,
                     user_links_dict[message.chat.id]['subject'],
                     user_links_dict[message.chat.id]['subject_type'],
@@ -400,7 +406,8 @@ def input_link(message):
                              f"3. Нажать <b>'{confirm_button}'</b> (ссылка добавится в расписание) и перейти в главное меню\n"
                              f"4. Нажать <b>'{cancel_button}'</b> (ссылки не добавится в расписание) и перейти в главное меню",
                              reply_markup=keyboard,
-                             parse_mode='HTML')
+                             parse_mode='HTML',
+                             disable_web_page_preview=True)
 
         elif user_links_dict[message.chat.id]['password'] != '':
             keyboard = keyboard_generator.generate_default_keyboard_row((change_link_button, confirm_button),
@@ -416,7 +423,8 @@ def input_link(message):
                              f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
                              f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
                              reply_markup=keyboard,
-                             parse_mode='HTML')
+                             parse_mode='HTML',
+                             disable_web_page_preview=True)
 
         db.set_state(message.from_user.username,
                      stateworker.States.S_INPUT_PASSWORD.value,
@@ -438,7 +446,8 @@ def input_link(message):
                              f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
                              f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
                              reply_markup=keyboard,
-                             parse_mode='HTML')
+                             parse_mode='HTML',
+                             disable_web_page_preview=True)
 
         elif user_links_dict[message.chat.id]['password'] != '':
             keyboard = keyboard_generator.generate_default_keyboard_row((change_password_button, confirm_button),
@@ -454,7 +463,8 @@ def input_link(message):
                              f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
                              f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
                              reply_markup=keyboard,
-                             parse_mode='HTML')
+                             parse_mode='HTML',
+                             disable_web_page_preview=True)
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
@@ -473,7 +483,8 @@ def input_password(message):
         bot.send_message(message.chat.id,
                          f"Ссылка для <b>'{user_links_dict[message.chat.id]['subject_type']}</b> - "
                          f"<b>{user_links_dict[message.chat.id]['subject']}'</b> успешно добавлена.",
-                         reply_markup=keyboard_generator.main_menu_keyboard)
+                         reply_markup=keyboard_generator.main_menu_keyboard,
+                         disable_web_page_preview=True)
         db.set_state(message.from_user.username,
                      stateworker.States.S_MAIN_MENU.value,
                      time.strftime('%d/%m/%y, %X'),
@@ -503,7 +514,8 @@ def input_password(message):
                              f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
                              f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
                              reply_markup=keyboard,
-                             parse_mode='HTML')
+                             parse_mode='HTML',
+                             disable_web_page_preview=True)
 
         elif user_links_dict[message.chat.id]['password'] != '':
             keyboard = keyboard_generator.generate_default_keyboard_row((change_password_button, confirm_button),
@@ -519,7 +531,8 @@ def input_password(message):
                              f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
                              f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
                              reply_markup=keyboard,
-                             parse_mode='HTML')
+                             parse_mode='HTML',
+                             disable_web_page_preview=True)
 
     elif message.text == message.text:
         user_links_dict[message.chat.id]['password'] = message.text
@@ -533,7 +546,8 @@ def input_password(message):
                          f"2. Изменить <b>ссылку</b> нажав <b>'{change_link_button}'</b>\n"
                          f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
                          f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
-                         parse_mode='HTML')
+                         parse_mode='HTML',
+                         disable_web_page_preview=True)
 
 
 """#####################################################################################################################
@@ -558,7 +572,8 @@ def change_link(message):
                          f"Ссылка для <b>'{user_links_dict[message.chat.id]['subject_type']}</b> - "
                          f"<b>{user_links_dict[message.chat.id]['subject']}'</b> успешно изменена.",
                          reply_markup=keyboard_generator.main_menu_keyboard,
-                         parse_mode='HTML')
+                         parse_mode='HTML',
+                         disable_web_page_preview=True)
         db.change_link(user_links_dict[message.chat.id]['link'],
                        user_links_dict[message.chat.id]['password'],
                        message.chat.id,
@@ -583,7 +598,8 @@ def change_link(message):
                              reply_markup=keyboard_generator.generate_default_keyboard_row(
                                  (change_link_button, confirm_button),
                                  (cancel_button,)),
-                             parse_mode='HTML')
+                             parse_mode='HTML',
+                             disable_web_page_preview=True)
 
         elif user_links_dict[message.chat.id]['password'] != '':
             bot.send_message(message.chat.id,
@@ -599,7 +615,8 @@ def change_link(message):
                              reply_markup=keyboard_generator.generate_default_keyboard_row(
                                  (change_link_button, confirm_button),
                                  (cancel_button,)),
-                             parse_mode='HTML')
+                             parse_mode='HTML',
+                             disable_web_page_preview=True)
         db.set_state(message.from_user.username,
                      stateworker.States.S_CHANGE_PASSWORD.value,
                      time.strftime('%d/%m/%y, %X'),
@@ -638,7 +655,8 @@ def change_link(message):
                              reply_markup=keyboard_generator.generate_default_keyboard_row(
                                  (change_password_button, confirm_button),
                                  (cancel_button,)),
-                             parse_mode='HTML')
+                             parse_mode='HTML',
+                             disable_web_page_preview=True)
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
@@ -658,7 +676,8 @@ def change_password(message):
                          f"Ссылка для <b>'{user_links_dict[message.chat.id]['subject_type']}</b> - "
                          f"<b>{user_links_dict[message.chat.id]['subject']}'</b> успешно изменена.",
                          reply_markup=keyboard_generator.main_menu_keyboard,
-                         parse_mode='HTML')
+                         parse_mode='HTML',
+                         disable_web_page_preview=True)
         db.change_link(user_links_dict[message.chat.id]['link'],
                        user_links_dict[message.chat.id]['password'],
                        message.chat.id,
@@ -683,7 +702,8 @@ def change_password(message):
                              reply_markup=keyboard_generator.generate_default_keyboard_row(
                                  (add_password_button, confirm_button),
                                  (cancel_button,)),
-                             parse_mode='HTML')
+                             parse_mode='HTML',
+                             disable_web_page_preview=True)
 
         elif user_links_dict[message.chat.id]['password'] != '':
             bot.send_message(message.chat.id,
@@ -699,7 +719,8 @@ def change_password(message):
                              reply_markup=keyboard_generator.generate_default_keyboard_row(
                                  (change_password_button, confirm_button),
                                  (cancel_button,)),
-                             parse_mode='HTML')
+                             parse_mode='HTML',
+                             disable_web_page_preview=True)
         db.set_state(message.from_user.username,
                      stateworker.States.S_CHANGE_LINK.value,
                      time.strftime('%d/%m/%y, %X'),
@@ -720,7 +741,8 @@ def change_password(message):
                              reply_markup=keyboard_generator.generate_default_keyboard_row(
                                  (change_link_button, confirm_button),
                                  (cancel_button,)),
-                             parse_mode='HTML')
+                             parse_mode='HTML',
+                             disable_web_page_preview=True)
 
         elif user_links_dict[message.chat.id]['password'] != '':
             user_links_dict[message.chat.id]['password'] = message.text
@@ -737,7 +759,8 @@ def change_password(message):
                              reply_markup=keyboard_generator.generate_default_keyboard_row(
                                  (change_link_button, confirm_button),
                                  (cancel_button,)),
-                             parse_mode='HTML')
+                             parse_mode='HTML',
+                             disable_web_page_preview=True)
 
 
 """#####################################################################################################################

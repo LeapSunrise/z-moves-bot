@@ -1,14 +1,14 @@
 import datetime
 import os
 import time
-import keyboard_generator
-from buttons import *
-from database import stateworker
+
 from schedule_parser.schedule_parser import *
+from service import keyboard_generator, stateworker
+from service import service
+from service.buttons import *
 
 bot = telebot.TeleBot(os.environ['BOT_TOKEN'])
 db.init_db()
-not_available_reply = '⛔ В разработке'
 
 """#####################################################################################################################
                                                     START
@@ -17,50 +17,67 @@ not_available_reply = '⛔ В разработке'
 
 @bot.message_handler(commands=['start', 'START'])
 def start_message(message):
-    user_last_name = ''
+    user_name = message.from_user.first_name
     if message.from_user.last_name:
-        user_last_name = ' ' + message.from_user.last_name
+        user_name = f"{user_name} {message.from_user.last_name}"
 
     if db.get_user_info(message.chat.id) is None:
         bot.send_message(message.chat.id,
-                         f"Привет, {message.from_user.first_name}{user_last_name}! 🥴🤙\nZ-Moves на связи 😎\n\n"
-                         f"Для работы со мной напиши мне название своей группы.\n\nПример: <b><i>IO-83</i></b>",
+                         f"Привет, {user_name}! 🥴🤙\nZ-Moves на связи 😎\n\n"
+                         f"Для работы со мной напиши мне название своей группы.\n\nПример: <b><b>IO-83</b></b>",
                          parse_mode='HTML')
-        db.register_user(message.chat.id, message.from_user.username, stateworker.States.S_REGISTRATION.value,
-                         time.strftime('%d/%m/%y, %X'), time.strftime('%d/%m/%y, %X'))
+        db.register_user(message.chat.id,
+                         message.from_user.username,
+                         stateworker.States.S_REGISTRATION.value,
+                         time.strftime('%d/%m/%y, %X'),
+                         time.strftime('%d/%m/%y, %X'))
 
     elif db.get_user_info(message.chat.id)[2] is None:
-        bot.send_message(message.chat.id, 'Перестань тестировать меня. Введи группу плес', reply_markup=None)
+        bot.send_message(message.chat.id,
+                         f"Перестань тестировать меня. Введи группу плес")
 
     else:
-        bot.send_message(message.chat.id, 'Главное меню', reply_markup=keyboard_generator.main_menu_keyboard)
-        db.set_state(message.from_user.username, stateworker.States.S_MAIN_MENU.value, time.strftime('%d/%m/%y, %X'),
+        bot.send_message(message.chat.id,
+                         f"Главное меню",
+                         reply_markup=keyboard_generator.main_menu_keyboard)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_MAIN_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
 
 
 @bot.message_handler(func=lambda message: (db.get_state(message.chat.id).__class__ == tuple and
                                            db.get_state(message.chat.id)[
-                                               0] == stateworker.States.S_REGISTRATION.value) or (
-                                                  db.get_state(message.chat.id).__class__ == tuple and
-                                                  db.get_state(message.chat.id)[
-                                                      0] == stateworker.States.S_CHANGE_GROUP.value))
+                                               0] == stateworker.States.S_REGISTRATION.value) or
+
+                                          (db.get_state(message.chat.id).__class__ == tuple and
+                                           db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_GROUP.value))
 def group_registration(message):
     if Schedule.is_group_exist(message.text):
-        bot.send_message(message.chat.id, 'Есть такая! Ну а теперь приступим 🙂',
+        bot.send_message(message.chat.id,
+                         f"Есть такая! Ну а теперь приступим 🙂",
                          reply_markup=keyboard_generator.main_menu_keyboard)
-        db.register_user_group_name(message.from_user.username, message.text, stateworker.States.S_MAIN_MENU.value,
-                                    time.strftime('%d/%m/%y, %X'), message.chat.id)
+        db.register_user_group_name(message.from_user.username,
+                                    message.text,
+                                    stateworker.States.S_MAIN_MENU.value,
+                                    time.strftime('%d/%m/%y, %X'),
+                                    message.chat.id)
 
     elif message.text == cancel_button:
-        bot.send_message(message.chat.id, 'Настройки', reply_markup=keyboard_generator.settings_menu_keyboard)
-        db.set_state(message.from_user.username, stateworker.States.S_SETTINGS_MENU.value,
+        bot.send_message(message.chat.id,
+                         f"Настройки",
+                         reply_markup=keyboard_generator.settings_menu_keyboard)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_SETTINGS_MENU.value,
                      time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
 
     else:
         bot.send_message(message.chat.id, '<b>{}</b>? Что-то я о такой группе ещё не слышал 🤥'
                                           'Попробуй ещё.'.format(message.text), parse_mode='HTML')
-        db.set_state(message.from_user.username, stateworker.States.S_REGISTRATION.value, time.strftime('%d/%m/%y, %X'),
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_REGISTRATION.value,
+                     time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
 
 
@@ -69,111 +86,138 @@ def group_registration(message):
 #####################################################################################################################"""
 
 
-@bot.message_handler(
-    func=lambda message: db.get_state(message.chat.id).__class__ == tuple and db.get_state(message.chat.id)[
-        0] == stateworker.States.S_MAIN_MENU.value)
+@bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
+                                          db.get_state(message.chat.id)[0] == stateworker.States.S_MAIN_MENU.value)
 def main_menu(message):
     if message.text == schedule_button:
-        bot.send_message(message.chat.id, 'Выбери опцию отображения расписания.',
+        bot.send_message(message.chat.id,
+                         f"Выбери опцию отображения расписания.",
                          reply_markup=keyboard_generator.schedule_menu_keyboard)
-        db.set_state(message.from_user.username, stateworker.States.S_SCHEDULE_MENU.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_SCHEDULE_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
     elif message.text == settings_button:
-        bot.send_message(message.chat.id, 'Что нужно настроить?',
+        bot.send_message(message.chat.id,
+                         f"Что нужно настроить?",
                          reply_markup=keyboard_generator.settings_menu_keyboard)
-        db.set_state(message.from_user.username, stateworker.States.S_SETTINGS_MENU.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_SETTINGS_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
     elif message.text == links_button:
-        bot.send_message(message.chat.id, 'Тыкай',
-                         reply_markup=keyboard_generator.dynamic_inline_link_menu(message.chat.id))
-        db.set_state(message.from_user.username, stateworker.States.S_MAIN_MENU.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
+        bot.send_message(message.chat.id,
+                         f"Здесь ты можешь добавлять ссылки к предметам, изменять и даже их удалять, "
+                         f"если они есть.",
+                         reply_markup=service.dynamic_menu_links_inline_keyboard_generator(message.chat.id))
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_MAIN_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
     elif message.text == hotlines_button:
-        bot.reply_to(message, not_available_reply)
-        db.set_state(message.from_user.username, stateworker.States.S_MAIN_MENU.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
+        bot.reply_to(message,
+                     service.not_available_reply)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_MAIN_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
     elif message.text == mails_button:
-        bot.reply_to(message, not_available_reply)
-        db.set_state(message.from_user.username, stateworker.States.S_MAIN_MENU.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
+        bot.reply_to(message,
+                     service.not_available_reply)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_MAIN_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
     elif message.text == info_button:
-        bot.reply_to(message, not_available_reply)
-        db.set_state(message.from_user.username, stateworker.States.S_MAIN_MENU.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
+        bot.reply_to(message,
+                     service.not_available_reply)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_MAIN_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
     elif message.text == help_button:
-        bot.reply_to(message, not_available_reply)
-        db.set_state(message.from_user.username, stateworker.States.S_MAIN_MENU.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
+        bot.reply_to(message,
+                     service.not_available_reply)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_MAIN_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
 
-add_link_dict = {}
+user_links_dict = {}
 
 
-@bot.callback_query_handler(
-    func=lambda call: db.get_state(call.message.chat.id).__class__ == tuple and db.get_state(call.message.chat.id)[
-        0] == stateworker.States.S_MAIN_MENU.value)
+@bot.callback_query_handler(func=lambda call: True)
 def links_menu(call):
-    subject_keyboard = keyboard_generator.generate_inline_subjects(call.message.chat.id)
-    linked_subject_keyboard = keyboard_generator.generate_inline_linked_subjects(call.message.chat.id)
-    linked_subject_keyboard_to_rm = keyboard_generator.generate_inline_linked_subjects_to_remove(call.message.chat.id)
+    inline_subject_keyboard = service.generate_inline_subjects(call.message.chat.id)
+    inline_linked_subject_keyboard_to_ch = service.generate_inline_linked_subjects_to_change(call.message.chat.id)
+    inline_linked_subject_keyboard_to_rm = service.generate_inline_linked_subjects_to_remove(call.message.chat.id)
     inline_subject_type_keyboard = telebot.types.InlineKeyboardMarkup()
     inline_subject_type_keyboard.add(inline_lec_button, inline_lab_button, inline_prac_button)
     inline_subject_type_keyboard.add(inline_second_back_button)
+    inline_confirm_cancel_keyboard = telebot.types.InlineKeyboardMarkup()
+    inline_confirm_cancel_keyboard.add(inline_remove_link_cancel_button, inline_remove_link_confirm_button)
 
-    if call.data == 'add_link':
-        add_link_dict.update({call.message.chat.id: {'lesson': '', 'type': '', 'link': '', 'password': ''}})
-        bot.edit_message_text(text='Выбери предмет',
+    if call.data == 'add_link' or call.data == 'second_back_button':
+        user_links_dict.update({call.message.chat.id: {
+            'subject': '',
+            'subject_type': '',
+            'link': '',
+            'password': ''}})
+        bot.edit_message_text(f"Выбери предмет для которого нужно добавить ссылку",
                               chat_id=call.message.chat.id,
                               message_id=call.message.message_id,
-                              reply_markup=subject_keyboard,
+                              reply_markup=inline_subject_keyboard,
                               parse_mode='HTML')
 
     elif call.data == 'change_link':
-        add_link_dict.update({call.message.chat.id: {'lesson': '', 'type': '', 'link': '', 'password': ''}})
-        bot.edit_message_text(text='Выбери предмет',
+        user_links_dict.update({call.message.chat.id: {
+            'subject': '',
+            'subject_type': '',
+            'link': '',
+            'password': ''}})
+        bot.edit_message_text(f"Выбери предмет для которого нужно изменить ссылку",
                               chat_id=call.message.chat.id,
                               message_id=call.message.message_id,
-                              reply_markup=linked_subject_keyboard,
+                              reply_markup=inline_linked_subject_keyboard_to_ch,
                               parse_mode='HTML')
 
     elif call.data == 'remove_link':
-        add_link_dict.update({call.message.chat.id: {'lesson': '', 'type': '', 'link': '', 'password': ''}})
-        bot.edit_message_text(text='Выбери предмет',
+        user_links_dict.update({call.message.chat.id: {
+            'subject': '',
+            'subject_type': '',
+            'link': '',
+            'password': ''}})
+        bot.edit_message_text(f"Выбери предмет для которого нужно удалить ссылку",
                               chat_id=call.message.chat.id,
                               message_id=call.message.message_id,
-                              reply_markup=linked_subject_keyboard_to_rm,
+                              reply_markup=inline_linked_subject_keyboard_to_rm,
                               parse_mode='HTML')
 
     elif call.data == 'first_back_button':
-        bot.edit_message_text(text='214',
+        bot.edit_message_text(f"Здесь ты можешь добавлять ссылки к предметам, изменять и даже их удалять, "
+                              f"если они есть.",
                               chat_id=call.message.chat.id,
                               message_id=call.message.message_id,
-                              reply_markup=keyboard_generator.dynamic_inline_link_menu(call.message.chat.id),
+                              reply_markup=service.dynamic_menu_links_inline_keyboard_generator(call.message.chat.id),
                               parse_mode='HTML')
 
-    elif call.data == 'second_back_button':
-        bot.edit_message_text(text='Выбери предмет',
-                              chat_id=call.message.chat.id,
-                              message_id=call.message.message_id,
-                              reply_markup=subject_keyboard,
-                              parse_mode='HTML')
-
-
-    elif call.data in [button['callback_data'] for buttons in subject_keyboard.to_dict()['inline_keyboard'] for button
-                       in buttons]:
-        for buttons in subject_keyboard.to_dict()['inline_keyboard'][
-                       :len(subject_keyboard.to_dict()['inline_keyboard']) - 1]:  # тут -1 чтобы не ловилась бэк-кнопка
+    # jump to ADD_LINK state
+    elif call.data in [button['callback_data'] for buttons in inline_subject_keyboard.to_dict()['inline_keyboard']
+                       for button in buttons]:
+        for buttons in inline_subject_keyboard.to_dict()['inline_keyboard'][
+                       :len(inline_subject_keyboard.to_dict()['inline_keyboard']) - 1]:  # тут -1 чтобы не ловилась бэк-кнопка
             for button in buttons:
                 if button['callback_data'] == call.data:
-                    add_link_dict[call.message.chat.id]['lesson'] = button['text']
-                    bot.edit_message_text(text=f"Предмет: <i>{add_link_dict[call.message.chat.id]['lesson']}</i>\n\n"
-                                               f"Выбери тип занятия 🙃",
+                    user_links_dict[call.message.chat.id]['subject'] = button['text']
+                    bot.edit_message_text(f"Предмет: <b>{user_links_dict[call.message.chat.id]['subject']}</b>\n\n"
+                                          f"Выбери тип занятия 🙃",
                                           chat_id=call.message.chat.id,
                                           message_id=call.message.message_id,
                                           reply_markup=inline_subject_type_keyboard,
@@ -181,92 +225,132 @@ def links_menu(call):
 
     elif call.data in [button['callback_data'] for buttons in inline_subject_type_keyboard.to_dict()['inline_keyboard']
                        for button in buttons]:
-        for button in inline_subject_type_keyboard.to_dict()['inline_keyboard'][0]:
+        for button in inline_subject_type_keyboard.to_dict()['inline_keyboard'][0]:  # тут [0] чтобы не ловилась бэк-кнопка
             if button['callback_data'] == call.data:
-                add_link_dict[call.message.chat.id]['type'] = button['text']
+                user_links_dict[call.message.chat.id]['subject_type'] = button['text']
                 bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-                keyboard = telebot.types.ReplyKeyboardMarkup(True, True)
-                keyboard.add(cancel_button)
+                keyboard = keyboard_generator.generate_default_keyboard(cancel_button)
                 bot.send_message(call.message.chat.id,
-                                 f"Предмет: <i>{add_link_dict[call.message.chat.id]['lesson']}</i>\n"
-                                 f"Тип занятия: <i>{add_link_dict[call.message.chat.id]['type']}</i>"
-                                 f"\n\nТеперь попрошу скинуть мне ссылочку 🤓",
+                                 f"Предмет: <b>{user_links_dict[call.message.chat.id]['subject']}</b>\n"
+                                 f"Тип занятия: <b>{user_links_dict[call.message.chat.id]['subject_type']}</b>\n\n"
+                                 f"Теперь попрошу скинуть мне ссылочку 🤓",
                                  reply_markup=keyboard,
                                  parse_mode='HTML')
-                db.set_state(call.message.from_user.username, stateworker.States.S_INPUT_LINK.value,
-                             time.strftime('%d/%m/%y, %X'), call.message.chat.id)
+                db.set_state(call.message.from_user.username,
+                             stateworker.States.S_INPUT_LINK.value,
+                             time.strftime('%d/%m/%y, %X'),
+                             call.message.chat.id)
 
-    elif call.data in [button['callback_data'] for buttons in linked_subject_keyboard.to_dict()['inline_keyboard'] for
-                       button in buttons]:
-        for buttons in linked_subject_keyboard.to_dict()['inline_keyboard'][
-                       :len(linked_subject_keyboard.to_dict()[
-                                'inline_keyboard']) - 1]:  # тут -1 чтобы не ловилась бэк-кнопка
+    # jump to CHANGE_LINK state
+    elif call.data in [button['callback_data'] for buttons in
+                       inline_linked_subject_keyboard_to_ch.to_dict()['inline_keyboard'] for button in buttons]:
+        for buttons in inline_linked_subject_keyboard_to_ch.to_dict()['inline_keyboard'][
+                       :len(inline_linked_subject_keyboard_to_ch.to_dict()['inline_keyboard']) - 1]:  # тут -1 чтобы не ловилась бэк-кнопка
             for button in buttons:
                 if button['callback_data'] == call.data:
-                    add_link_dict.update({call.message.chat.id: {
-                        'lesson': button['text'][int(button['text'].find('-')) + 2:],
-                        'type': button['callback_data'][:int(button['callback_data'].find('_'))], 'link': '',
+                    user_links_dict.update({call.message.chat.id: {
+                        'subject': button['text'][int(button['text'].find('-')) + 2:],  # текст кнопки после '- '
+                        'subject_type': button['text'][:int(button['text'].find(' '))],  # текст кнопки до ' '
+                        'link': '',
                         'password': ''}})
-                    add_link_dict[call.message.chat.id]['link'] = \
-                    db.get_links_to_change(call.message.chat.id, add_link_dict[call.message.chat.id]['lesson'],
-                                           add_link_dict[call.message.chat.id]['type'])[3]
-                    add_link_dict[call.message.chat.id]['password'] = \
-                    db.get_links_to_change(call.message.chat.id, add_link_dict[call.message.chat.id]['lesson'],
-                                           add_link_dict[call.message.chat.id]['type'])[4]
-                    bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-                    if add_link_dict[call.message.chat.id]['password'] == '':
+                    user_links_dict[call.message.chat.id]['link'] = \
+                        db.get_links_to_change(call.message.chat.id,
+                                               user_links_dict[call.message.chat.id]['subject'],
+                                               user_links_dict[call.message.chat.id]['subject_type'])[3]  # 3 - ссылка
+                    user_links_dict[call.message.chat.id]['password'] = \
+                        db.get_links_to_change(call.message.chat.id,
+                                               user_links_dict[call.message.chat.id]['subject'],
+                                               user_links_dict[call.message.chat.id]['subject_type'])[4]  # 4 - пароль
+                    bot.delete_message(chat_id=call.message.chat.id,
+                                       message_id=call.message.message_id)
+
+                    if user_links_dict[call.message.chat.id]['password'] == '':
                         bot.send_message(call.message.chat.id,
-                                         f"Предмет: <i>{add_link_dict[call.message.chat.id]['lesson']}</i>\n"
-                                         f"Тип занятия: <i>{add_link_dict[call.message.chat.id]['type']}</i>\n"
-                                         f"Ссылка: <i>{add_link_dict[call.message.chat.id]['link']}</i>\n",
+                                         f"Предмет: <b>{user_links_dict[call.message.chat.id]['subject']}</b>\n"
+                                         f"Тип занятия: <b>{user_links_dict[call.message.chat.id]['subject_type']}</b>\n"
+                                         f"Ссылка: <b>{user_links_dict[call.message.chat.id]['link']}</b>\n",
                                          reply_markup=keyboard_generator.generate_default_keyboard_row(
                                              (add_password_button, confirm_button),
                                              (cancel_button,)),
                                          parse_mode='HTML')
-                    else:
+
+                    elif user_links_dict[call.message.chat.id]['password'] != '':
                         bot.send_message(call.message.chat.id,
-                                         f"Предмет: <i>{add_link_dict[call.message.chat.id]['lesson']}</i>\n"
-                                         f"Тип занятия: <i>{add_link_dict[call.message.chat.id]['type']}</i>\n"
-                                         f"Ссылка: <i>{add_link_dict[call.message.chat.id]['link']}</i>\n"
-                                         f"Пароль: <i>{add_link_dict[call.message.chat.id]['password']}</i>\n",
+                                         f"Предмет: <b>{user_links_dict[call.message.chat.id]['subject']}</b>\n"
+                                         f"Тип занятия: <b>{user_links_dict[call.message.chat.id]['subject_type']}</b>\n"
+                                         f"Ссылка: <b>{user_links_dict[call.message.chat.id]['link']}</b>\n"
+                                         f"Пароль: <b>{user_links_dict[call.message.chat.id]['password']}</b>\n",
                                          reply_markup=keyboard_generator.generate_default_keyboard_row(
                                              (change_password_button, confirm_button),
                                              (cancel_button,)),
                                          parse_mode='HTML')
-                    db.set_state(call.message.from_user.username, stateworker.States.S_CHANGE_LINK.value,
-                                 time.strftime('%d/%m/%y, %X'), call.message.chat.id)
 
+                    db.set_state(call.message.from_user.username,
+                                 stateworker.States.S_CHANGE_LINK.value,
+                                 time.strftime('%d/%m/%y, %X'),
+                                 call.message.chat.id)
 
-    elif call.data in [button['callback_data'] for buttons in linked_subject_keyboard_to_rm.to_dict()['inline_keyboard']
-                       for button in buttons]:
-        for buttons in linked_subject_keyboard_to_rm.to_dict()['inline_keyboard'][
-                       :len(linked_subject_keyboard_to_rm.to_dict()[
-                                'inline_keyboard']) - 1]:  # тут -1 чтобы не ловилась бэк-кнопка
-            print(buttons)
-            print(linked_subject_keyboard_to_rm.to_dict())
+    # remove link
+    elif call.data in [button['callback_data'] for buttons in
+                       inline_linked_subject_keyboard_to_rm.to_dict()['inline_keyboard'] for button in buttons]:
+        for buttons in inline_linked_subject_keyboard_to_rm.to_dict()['inline_keyboard'][
+                       :len(inline_linked_subject_keyboard_to_rm.to_dict()['inline_keyboard']) - 1]:  # тут -1 чтобы не ловилась бэк-кнопка
             for button in buttons:
-                print(button)
                 if button['callback_data'] == call.data:
-                    add_link_dict.update({call.message.chat.id: {
-                        'lesson': button['text'][int(button['text'].find('-')) + 2:],
-                        'type': button['callback_data'][3:int(button['callback_data'].rfind('_'))], 'link': '',
+                    user_links_dict.update({call.message.chat.id: {
+                        'subject': button['text'][int(button['text'].find('-')) + 2:],  # текст кнопки после '- '
+                        'subject_type': button['text'][:int(button['text'].find(' '))],  # текст кнопки до ' '
+                        'link': '',
                         'password': ''}})
-                    add_link_dict[call.message.chat.id]['link'] = \
-                        db.get_links_to_change(call.message.chat.id, add_link_dict[call.message.chat.id]['lesson'],
-                                               add_link_dict[call.message.chat.id]['type'])[3]
-                    add_link_dict[call.message.chat.id]['password'] = \
-                        db.get_links_to_change(call.message.chat.id, add_link_dict[call.message.chat.id]['lesson'],
-                                               add_link_dict[call.message.chat.id]['type'])[4]
+                    user_links_dict[call.message.chat.id]['link'] = \
+                        db.get_links_to_change(call.message.chat.id,
+                                               user_links_dict[call.message.chat.id]['subject'],
+                                               user_links_dict[call.message.chat.id]['subject_type'])[3]  # 3 - ссылка
+                    user_links_dict[call.message.chat.id]['password'] = \
+                        db.get_links_to_change(call.message.chat.id,
+                                               user_links_dict[call.message.chat.id]['subject'],
+                                               user_links_dict[call.message.chat.id]['subject_type'])[4]  # 4 - пароль
 
-                    print(add_link_dict)
-                    if add_link_dict[call.message.chat.id]['password'] == '':
-                        bot.edit_message_text(call.message.chat.id,
-                                              f"Вы действительно хотите удалить это дерьмо?:\n"
-                                              f"Предмет: <i>{add_link_dict[call.message.chat.id]['lesson']}</i>\n"
-                                              f"Тип занятия: <i>{add_link_dict[call.message.chat.id]['type']}</i>\n"
-                                              f"Ссылка: <i>{add_link_dict[call.message.chat.id]['link']}</i>\n",
-                                              reply_markup=keyboard_generator.generate_inline_keyboard(
-                                                  inline_remove_link_cancel_button))
+                    if user_links_dict[call.message.chat.id]['password'] == '':
+                        bot.edit_message_text(f"Ты удаляешь:\n"
+                                              f"Предмет: <b>{user_links_dict[call.message.chat.id]['subject']}</b>\n"
+                                              f"Тип занятия: <b>{user_links_dict[call.message.chat.id]['subject_type']}</b>\n"
+                                              f"Ссылка: <b>{user_links_dict[call.message.chat.id]['link']}</b>\n",
+                                              chat_id=call.message.chat.id,
+                                              message_id=call.message.message_id,
+                                              reply_markup=inline_confirm_cancel_keyboard,
+                                              parse_mode='HTML')
+
+                    elif user_links_dict[call.message.chat.id]['password'] != '':
+                        bot.edit_message_text(f"Ты удаляешь:\n"
+                                              f"Предмет: <b>{user_links_dict[call.message.chat.id]['subject']}</b>\n"
+                                              f"Тип занятия: <b>{user_links_dict[call.message.chat.id]['subject_type']}</b>\n"
+                                              f"Ссылка: <b>{user_links_dict[call.message.chat.id]['link']}</b>\n"
+                                              f"Пароль: <b>{user_links_dict[call.message.chat.id]['password']}</b>",
+                                              chat_id=call.message.chat.id,
+                                              message_id=call.message.message_id,
+                                              reply_markup=inline_confirm_cancel_keyboard,
+                                              parse_mode='HTML')
+
+    elif call.data == 'confirm_remove_link':
+        bot.delete_message(chat_id=call.message.chat.id,
+                           message_id=call.message.message_id)
+        db.remove_link(call.message.chat.id, user_links_dict[call.message.chat.id]['subject'],
+                       user_links_dict[call.message.chat.id]['subject_type'])
+        bot.send_message(call.message.chat.id,
+                         f"Ссылка <i>'{user_links_dict[call.message.chat.id]['link']}'</i> на предмет "
+                         f"'<b>{user_links_dict[call.message.chat.id]['subject_type']}</b> - "
+                         f"<b>{user_links_dict[call.message.chat.id]['subject']}</b>' "
+                         f"успешно удалена.",
+                         reply_markup=keyboard_generator.main_menu_keyboard,
+                         parse_mode='HTML')
+
+    elif call.data == 'cancel_remove_link':
+        bot.edit_message_text("Выбери предмет для удаления ссылки",
+                              chat_id=call.message.chat.id,
+                              message_id=call.message.message_id,
+                              reply_markup=inline_linked_subject_keyboard_to_rm,
+                              parse_mode='HTML')
 
 
 """#####################################################################################################################
@@ -274,119 +358,182 @@ def links_menu(call):
 #####################################################################################################################"""
 
 
-@bot.message_handler(
-    func=lambda message: db.get_state(message.chat.id).__class__ == tuple and db.get_state(message.chat.id)[
-        0] == stateworker.States.S_INPUT_LINK.value)
+@bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
+                                          db.get_state(message.chat.id)[0] == stateworker.States.S_INPUT_LINK.value)
 def input_link(message):
     if message.text == cancel_button:
-        bot.send_message(message.chat.id, 'Главное меню', reply_markup=keyboard_generator.main_menu_keyboard)
-        db.set_state(message.from_user.username, stateworker.States.S_MAIN_MENU.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
+        bot.send_message(message.chat.id,
+                         f"Главное меню",
+                         reply_markup=keyboard_generator.main_menu_keyboard)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_MAIN_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
     elif message.text == confirm_button:
-
-        bot.send_message(message.chat.id, 'ГЦ. Ті справівсі', reply_markup=keyboard_generator.main_menu_keyboard)
-        db.set_state(message.from_user.username, stateworker.States.S_MAIN_MENU.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
-        db.add_link(message.chat.id, add_link_dict[message.chat.id]['lesson'], add_link_dict[message.chat.id]['type'],
-                    add_link_dict[message.chat.id]['link'], add_link_dict[message.chat.id]['password'])
-        add_link_dict.pop(message.chat.id)
-
+        bot.send_message(message.chat.id,
+                         f"Ссылка для <b>'{user_links_dict[message.chat.id]['subject_type']}</b> - "
+                         f"<b>{user_links_dict[message.chat.id]['subject']}'</b> успешно добавлена.",
+                         reply_markup=keyboard_generator.main_menu_keyboard,
+                         parse_mode='HTML')
+        db.add_link(message.chat.id,
+                    user_links_dict[message.chat.id]['subject'],
+                    user_links_dict[message.chat.id]['subject_type'],
+                    user_links_dict[message.chat.id]['link'],
+                    user_links_dict[message.chat.id]['password'])
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_MAIN_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
     elif message.text == add_password_button or message.text == change_password_button:
-        if add_link_dict[message.chat.id]['password'] == '':
-            bot.send_message(message.chat.id, f"Предмет: <i>{add_link_dict[message.chat.id]['lesson']}</i>\n"
-                                              f"Тип занятия: <i>{add_link_dict[message.chat.id]['type']}</i>\n"
-                                              f"Ссылка: <i>{add_link_dict[message.chat.id]['link']}</i>\n"
-                                              f"Пароль: \n"
-                                              f"Добавляй пассворд",
-                             reply_markup=keyboard_generator.generate_default_keyboard_row(
-                                 (change_link_button, confirm_button),
-                                 (cancel_button,)),
+        if user_links_dict[message.chat.id]['password'] == '':
+            keyboard = keyboard_generator.generate_default_keyboard_row((change_link_button, confirm_button),
+                                                                        (cancel_button,))
+            bot.send_message(message.chat.id,
+                             f"Предмет: <b>{user_links_dict[message.chat.id]['subject']}</b>\n"
+                             f"Тип занятия: <b>{user_links_dict[message.chat.id]['subject_type']}</b>\n"
+                             f"Ссылка: <b>{user_links_dict[message.chat.id]['link']}</b>\n\n"
+                             f"Ты можешь:\n"
+                             f"1. Отправить мне <b>пароль</b>\n"
+                             f"2. Изменить <b>ссылку</b>, нажав <b>'{change_link_button}'</b>\n"
+                             f"3. Нажать <b>'{confirm_button}'</b> (ссылка добавится в расписание) и перейти в главное меню\n"
+                             f"4. Нажать <b>'{cancel_button}'</b> (ссылки не добавится в расписание) и перейти в главное меню",
+                             reply_markup=keyboard,
                              parse_mode='HTML')
 
-        elif add_link_dict[message.chat.id]['password'] != '':
-            bot.send_message(message.chat.id, f"Предмет: {add_link_dict[message.chat.id]['lesson']}\n"
-                                              f"Тип занятия: {add_link_dict[message.chat.id]['type']}\n"
-                                              f"Ссылка: {add_link_dict[message.chat.id]['link']}\n"
-                                              f"Пароль: {add_link_dict[message.chat.id]['password']}\n\n"
-                                              f"Добавляй пассворд",
-                             reply_markup=keyboard_generator.generate_default_keyboard_row(
-                                 (change_link, confirm_button),
-                                 (cancel_button,)),
+        elif user_links_dict[message.chat.id]['password'] != '':
+            keyboard = keyboard_generator.generate_default_keyboard_row((change_link_button, confirm_button),
+                                                                        (cancel_button,))
+            bot.send_message(message.chat.id,
+                             f"Предмет: <b>{user_links_dict[message.chat.id]['subject']}</b>\n"
+                             f"Тип занятия: <b>{user_links_dict[message.chat.id]['subject_type']}</b>\n"
+                             f"Ссылка: <b>{user_links_dict[message.chat.id]['link']}</b>\n"
+                             f"Пароль: <b>{user_links_dict[message.chat.id]['password']}</b>\n\n"
+                             f"Ты можешь:\n"
+                             f"1. Отправить мне <b>пароль</b> повторно (заменяется предыдущий)\n"
+                             f"2. Изменить <b>ссылку</b>, нажав <b>'{change_link_button}'</b>\n"
+                             f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
+                             f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
+                             reply_markup=keyboard,
                              parse_mode='HTML')
 
-        db.set_state(message.from_user.username, stateworker.States.S_INPUT_PASSWORD.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_INPUT_PASSWORD.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
     elif message.text == message.text:
-        if add_link_dict[message.chat.id]['password'] == '':
-            add_link_dict[message.chat.id]['link'] = message.text
-            bot.send_message(message.chat.id, f"Предмет: {add_link_dict[message.chat.id]['lesson']}\n"
-                                              f"Тип занятия: {add_link_dict[message.chat.id]['type']}\n"
-                                              f"Ссылка: {add_link_dict[message.chat.id]['link']}\n\n"
-                                              f"Тык добавить пас или готово",
-                             reply_markup=keyboard_generator.generate_default_keyboard_row(
-                                 (add_password_button, confirm_button),
-                                 (cancel_button,)))
-        elif add_link_dict[message.chat.id]['password'] != '':
-            add_link_dict[message.chat.id]['link'] = message.text
-            bot.send_message(message.chat.id, f"Предмет: {add_link_dict[message.chat.id]['lesson']}\n"
-                                              f"Тип занятия: {add_link_dict[message.chat.id]['type']}\n"
-                                              f"Ссылка: {add_link_dict[message.chat.id]['link']}\n"
-                                              f"Пароль: {add_link_dict[message.chat.id]['password']}\n\n"
-                                              f"Добавляй пассворд",
-                             reply_markup=keyboard_generator.generate_default_keyboard_row(
-                                 (add_password_button, confirm_button),
-                                 (cancel_button,)))
+        user_links_dict[message.chat.id]['link'] = message.text
+        if user_links_dict[message.chat.id]['password'] == '':
+            keyboard = keyboard_generator.generate_default_keyboard_row((add_password_button, confirm_button),
+                                                                        (cancel_button,))
+            bot.send_message(message.chat.id,
+                             f"Предмет: <b>{user_links_dict[message.chat.id]['subject']}</b>\n"
+                             f"Тип занятия: <b>{user_links_dict[message.chat.id]['subject_type']}</b>\n"
+                             f"Ссылка: <b>{user_links_dict[message.chat.id]['link']}</b>\n\n"
+                             f"Ты можешь:\n"
+                             f"1. Отправить мне <b>ссылку</b> повторно (заменяется предыдущая)\n"
+                             f"2. Добавить <b>пароль</b> к ссылке, нажав <b>'{add_password_button}'</b>\n"
+                             f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
+                             f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
+                             reply_markup=keyboard,
+                             parse_mode='HTML')
+
+        elif user_links_dict[message.chat.id]['password'] != '':
+            keyboard = keyboard_generator.generate_default_keyboard_row((change_password_button, confirm_button),
+                                                                        (cancel_button,))
+            bot.send_message(message.chat.id,
+                             f"Предмет: <b>{user_links_dict[message.chat.id]['subject']}</b>\n"
+                             f"Тип занятия: <b>{user_links_dict[message.chat.id]['subject_type']}</b>\n"
+                             f"Ссылка: <b>{user_links_dict[message.chat.id]['link']}</b>\n"
+                             f"<b>пароль</b>: <b>{user_links_dict[message.chat.id]['password']}</b>\n\n"
+                             f"Ты можешь:\n"
+                             f"1. Отправить мне <b>ссылку</b> повторно (заменяется предыдущая)\n"
+                             f"2. Изменить к ссылке, нажав <b>'{change_password_button}'</b>\n"
+                             f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
+                             f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
+                             reply_markup=keyboard,
+                             parse_mode='HTML')
 
 
-@bot.message_handler(
-    func=lambda message: db.get_state(message.chat.id).__class__ == tuple and db.get_state(message.chat.id)[
-        0] == stateworker.States.S_INPUT_PASSWORD.value)
+@bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
+                                          db.get_state(message.chat.id)[0] == stateworker.States.S_INPUT_PASSWORD.value)
 def input_password(message):
     if message.text == cancel_button:
-        bot.send_message(message.chat.id, 'Главное меню', reply_markup=keyboard_generator.main_menu_keyboard)
-        db.set_state(message.from_user.username, stateworker.States.S_MAIN_MENU.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
+        bot.send_message(message.chat.id,
+                         f"Главное меню",
+                         reply_markup=keyboard_generator.main_menu_keyboard)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_MAIN_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
     elif message.text == confirm_button:
-        bot.send_message(message.chat.id, 'ГЦ. Ті справівсі', reply_markup=keyboard_generator.main_menu_keyboard)
-        db.set_state(message.from_user.username, stateworker.States.S_MAIN_MENU.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
-        db.add_link(message.chat.id, add_link_dict[message.chat.id]['lesson'], add_link_dict[message.chat.id]['type'],
-                    add_link_dict[message.chat.id]['link'], add_link_dict[message.chat.id]['password'])
-        add_link_dict.pop(message.chat.id)
+        bot.send_message(message.chat.id,
+                         f"Ссылка для <b>'{user_links_dict[message.chat.id]['subject_type']}</b> - "
+                         f"<b>{user_links_dict[message.chat.id]['subject']}'</b> успешно добавлена.",
+                         reply_markup=keyboard_generator.main_menu_keyboard)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_MAIN_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
+        db.add_link(message.chat.id,
+                    user_links_dict[message.chat.id]['subject'],
+                    user_links_dict[message.chat.id]['subject_type'],
+                    user_links_dict[message.chat.id]['link'],
+                    user_links_dict[message.chat.id]['password'])
 
     elif message.text == change_link_button:
-        if add_link_dict[message.chat.id]['password'] == '':
-            bot.send_message(message.chat.id, f"Предмет: {add_link_dict[message.chat.id]['lesson']}\n"
-                                              f"Тип занятия: {add_link_dict[message.chat.id]['type']}\n"
-                                              f"Ссылка: {add_link_dict[message.chat.id]['link']}\n\n"
-                                              f"Тык добавить пас, готово или отмена",
-                             reply_markup=keyboard_generator.generate_default_keyboard_row(
-                                 (add_password_button, confirm_button),
-                                 (cancel_button,)))
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_INPUT_LINK.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
-        elif add_link_dict[message.chat.id]['password'] != '':
-            bot.send_message(message.chat.id, f"Предмет: {add_link_dict[message.chat.id]['lesson']}\n"
-                                              f"Тип занятия: {add_link_dict[message.chat.id]['type']}\n"
-                                              f"Ссылка: {add_link_dict[message.chat.id]['link']}\n"
-                                              f"Пароль: {add_link_dict[message.chat.id]['password']}\n\n"
-                                              f"ТЫК изменить пас, готово или отмена",
-                             reply_markup=keyboard_generator.generate_default_keyboard_row(
-                                 (change_password_button, confirm_button),
-                                 (cancel_button,)))
-        db.set_state(message.from_user.username, stateworker.States.S_INPUT_LINK.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
+        if user_links_dict[message.chat.id]['password'] == '':
+            keyboard = keyboard_generator.generate_default_keyboard_row((add_password_button, confirm_button),
+                                                                        (cancel_button,))
+            bot.send_message(message.chat.id,
+                             f"Предмет: <b>{user_links_dict[message.chat.id]['subject']}</b>\n"
+                             f"Тип занятия: <b>{user_links_dict[message.chat.id]['subject_type']}</b>\n"
+                             f"Ссылка: <b>{user_links_dict[message.chat.id]['link']}</b>\n\n"
+                             f"Ты можешь:\n"
+                             f"1. Отправить мне <b>ссылку</b> повторно (заменяется предыдущая)\n"
+                             f"2. Добавить <b>пароль</b> к ссылке, нажав <b>'{add_password_button}'</b>\n"
+                             f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
+                             f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
+                             reply_markup=keyboard,
+                             parse_mode='HTML')
+
+        elif user_links_dict[message.chat.id]['password'] != '':
+            keyboard = keyboard_generator.generate_default_keyboard_row((change_password_button, confirm_button),
+                                                                        (cancel_button,))
+            bot.send_message(message.chat.id,
+                             f"Предмет: <b>{user_links_dict[message.chat.id]['subject']}</b>\n"
+                             f"Тип занятия: <b>{user_links_dict[message.chat.id]['subject_type']}</b>\n"
+                             f"Ссылка: <b>{user_links_dict[message.chat.id]['link']}</b>\n"
+                             f"Пароль: <b>{user_links_dict[message.chat.id]['password']}</b>\n\n"
+                             f"Ты можешь:\n"
+                             f"1. Отправить мне <b>ссылку</b> повторно (заменяется предыдущая)\n"
+                             f"2. Изменить <b>пароль</b> к ссылке, нажав <b>'{change_password_button}'</b>\n"
+                             f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
+                             f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
+                             reply_markup=keyboard,
+                             parse_mode='HTML')
 
     elif message.text == message.text:
-        add_link_dict[message.chat.id]['password'] = message.text
-        bot.send_message(message.chat.id, f"Предмет: {add_link_dict[message.chat.id]['lesson']}\n"
-                                          f"Тип занятия: {add_link_dict[message.chat.id]['type']}\n"
-                                          f"Ссылка: {add_link_dict[message.chat.id]['link']}\n"
-                                          f"Пароль: {add_link_dict[message.chat.id]['password']}\n\n"
-                                          f"Тык изменить или готово")
+        user_links_dict[message.chat.id]['password'] = message.text
+        bot.send_message(message.chat.id,
+                         f"Предмет: <b>{user_links_dict[message.chat.id]['subject']}</b>\n"
+                         f"Тип занятия: <b>{user_links_dict[message.chat.id]['subject_type']}</b>\n"
+                         f"Ссылка: <b>{user_links_dict[message.chat.id]['link']}</b>\n"
+                         f"Пароль: <b>{user_links_dict[message.chat.id]['password']}</b>\n\n"
+                         f"Ты можешь:\n"
+                         f"1. Отправить мне <b>пароль</b> повторно (заменяется предыдущий)\n"
+                         f"2. Изменить <b>ссылку</b> нажав <b>'{change_link_button}'</b>\n"
+                         f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
+                         f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
+                         parse_mode='HTML')
 
 
 """#####################################################################################################################
@@ -394,141 +541,204 @@ def input_password(message):
 #####################################################################################################################"""
 
 
-@bot.message_handler(
-    func=lambda message: db.get_state(message.chat.id).__class__ == tuple and db.get_state(message.chat.id)[
-        0] == stateworker.States.S_CHANGE_LINK.value)
+@bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
+                                          db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_LINK.value)
 def change_link(message):
     if message.text == cancel_button:
-        bot.send_message(message.chat.id, 'Главное меню', reply_markup=keyboard_generator.main_menu_keyboard)
-        db.set_state(message.from_user.username, stateworker.States.S_MAIN_MENU.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
+        bot.send_message(message.chat.id,
+                         f"Главное меню",
+                         reply_markup=keyboard_generator.main_menu_keyboard)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_MAIN_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
     elif message.text == confirm_button:
-        bot.send_message(message.chat.id, 'ГЦ. Ті справівсі', reply_markup=keyboard_generator.main_menu_keyboard)
-        db.change_link(add_link_dict[message.chat.id]['link'], add_link_dict[message.chat.id]['password'],
-                       message.chat.id, add_link_dict[message.chat.id]['lesson'],
-                       add_link_dict[message.chat.id]['type'])
-        db.set_state(message.from_user.username, stateworker.States.S_MAIN_MENU.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
+        bot.send_message(message.chat.id,
+                         f"Ссылка для <b>'{user_links_dict[message.chat.id]['subject_type']}</b> - "
+                         f"<b>{user_links_dict[message.chat.id]['subject']}'</b> успешно изменена.",
+                         reply_markup=keyboard_generator.main_menu_keyboard,
+                         parse_mode='HTML')
+        db.change_link(user_links_dict[message.chat.id]['link'],
+                       user_links_dict[message.chat.id]['password'],
+                       message.chat.id,
+                       user_links_dict[message.chat.id]['subject'],
+                       user_links_dict[message.chat.id]['subject_type'])
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_MAIN_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
     elif message.text == add_password_button or message.text == change_password_button:
-        if add_link_dict[message.chat.id]['password'] == '':
-            bot.send_message(message.chat.id, f"Предмет: <i>{add_link_dict[message.chat.id]['lesson']}</i>\n"
-                                              f"Тип занятия: <i>{add_link_dict[message.chat.id]['type']}</i>\n"
-                                              f"Ссылка: <i>{add_link_dict[message.chat.id]['link']}</i>\n"
-                                              f"Пароль: \n\n"
-                                              f"Добавляй пассворд",
+        if user_links_dict[message.chat.id]['password'] == '':
+            bot.send_message(message.chat.id,
+                             f"Предмет: <b>{user_links_dict[message.chat.id]['subject']}</b>\n"
+                             f"Тип занятия: <b>{user_links_dict[message.chat.id]['subject_type']}</b>\n"
+                             f"Ссылка: <b>{user_links_dict[message.chat.id]['link']}</b>\n\n"
+                             f"Ты можешь:\n"
+                             f"1. Отправить мне <b>пароль</b>\n"
+                             f"2. Изменить <b>ссылку</b>, нажав <b>'{change_link_button}'</b>\n"
+                             f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
+                             f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
                              reply_markup=keyboard_generator.generate_default_keyboard_row(
                                  (change_link_button, confirm_button),
                                  (cancel_button,)),
                              parse_mode='HTML')
 
-        elif add_link_dict[message.chat.id]['password'] != '':
-            bot.send_message(message.chat.id, f"Предмет: {add_link_dict[message.chat.id]['lesson']}\n"
-                                              f"Тип занятия: {add_link_dict[message.chat.id]['type']}\n"
-                                              f"Ссылка: {add_link_dict[message.chat.id]['link']}\n"
-                                              f"Пароль: {add_link_dict[message.chat.id]['password']}\n\n"
-                                              f"Добавляй пассворд",
+        elif user_links_dict[message.chat.id]['password'] != '':
+            bot.send_message(message.chat.id,
+                             f"Предмет: <b>{user_links_dict[message.chat.id]['subject']}</b>\n"
+                             f"Тип занятия: <b>{user_links_dict[message.chat.id]['subject_type']}</b>\n"
+                             f"Ссылка: <b>{user_links_dict[message.chat.id]['link']}</b>\n"
+                             f"Пароль: <b>{user_links_dict[message.chat.id]['password']}</b>\n\n"
+                             f"Ты можешь:\n"
+                             f"1. Отправить мне <b>пароль</b> повторно (заменяется предыдущий)\n"
+                             f"2. Изменить <b>ссылку</b>, нажав <b>'{change_link_button}'</b>\n"
+                             f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
+                             f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
                              reply_markup=keyboard_generator.generate_default_keyboard_row(
                                  (change_link_button, confirm_button),
                                  (cancel_button,)),
                              parse_mode='HTML')
-        db.set_state(message.from_user.username, stateworker.States.S_CHANGE_PASSWORD.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_CHANGE_PASSWORD.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
     elif message.text == message.text:
-        if add_link_dict[message.chat.id]['password'] == '':
-            add_link_dict[message.chat.id]['link'] = message.text
-            bot.send_message(message.chat.id, f"Предмет: {add_link_dict[message.chat.id]['lesson']}\n"
-                                              f"Тип занятия: {add_link_dict[message.chat.id]['type']}\n"
-                                              f"Ссылка: {add_link_dict[message.chat.id]['link']}\n\n"
-                                              f"Тык добавить пас или готово",
+        user_links_dict[message.chat.id]['link'] = message.text
+        if user_links_dict[message.chat.id]['password'] == '':
+            bot.send_message(message.chat.id,
+                             f"Предмет: <b>{user_links_dict[message.chat.id]['subject']}</b>\n"
+                             f"Тип занятия: <b>{user_links_dict[message.chat.id]['subject_type']}</b>\n"
+                             f"Ссылка: <b>{user_links_dict[message.chat.id]['link']}</b>\n\n"
+                             f"Ты можешь:\n"
+                             f"1. Отправить мне <b>ссылку</b> повторно (заменяется предыдущая)\n"
+                             f"2. Добавить <b>пароль</b>, нажав <b>'{add_password_button}'</b>\n"
+                             f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
+                             f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
                              reply_markup=keyboard_generator.generate_default_keyboard_row(
                                  (add_password_button, confirm_button),
-                                 (cancel_button,)))
-        elif add_link_dict[message.chat.id]['password'] != '':
-            add_link_dict[message.chat.id]['link'] = message.text
-            bot.send_message(message.chat.id, f"Предмет: {add_link_dict[message.chat.id]['lesson']}\n"
-                                              f"Тип занятия: {add_link_dict[message.chat.id]['type']}\n"
-                                              f"Ссылка: {add_link_dict[message.chat.id]['link']}\n"
-                                              f"Пароль: {add_link_dict[message.chat.id]['password']}\n\n"
-                                              f"Добавляй пассворд",
+                                 (cancel_button,)),
+                             parse_mode='HTML',
+                             disable_web_page_preview=True)
+
+        elif user_links_dict[message.chat.id]['password'] != '':
+            user_links_dict[message.chat.id]['link'] = message.text
+            bot.send_message(message.chat.id,
+                             f"Предмет: <b>{user_links_dict[message.chat.id]['subject']}</b>\n"
+                             f"Тип занятия: <b>{user_links_dict[message.chat.id]['subject_type']}</b>\n"
+                             f"Ссылка: <b>{user_links_dict[message.chat.id]['link']}</b>\n"
+                             f"Пароль: <b>{user_links_dict[message.chat.id]['password']}</b>\n\n"
+                             f"Ты можешь:\n"
+                             f"1. Отправить мне <b>ссылку</b> повторно (заменяется предыдущая)\n"
+                             f"2. Изменить <b>пароль</b>, нажав <b>'{change_password_button}'</b>\n"
+                             f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
+                             f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
                              reply_markup=keyboard_generator.generate_default_keyboard_row(
                                  (change_password_button, confirm_button),
-                                 (cancel_button,)))
+                                 (cancel_button,)),
+                             parse_mode='HTML')
 
 
-@bot.message_handler(
-    func=lambda message: db.get_state(message.chat.id).__class__ == tuple and db.get_state(message.chat.id)[
-        0] == stateworker.States.S_CHANGE_PASSWORD.value)
+@bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
+                                          db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_PASSWORD.value)
 def change_password(message):
     if message.text == cancel_button:
-        bot.send_message(message.chat.id, 'Главное меню', reply_markup=keyboard_generator.main_menu_keyboard)
-        db.set_state(message.from_user.username, stateworker.States.S_MAIN_MENU.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
+        bot.send_message(message.chat.id,
+                         f"Главное меню",
+                         reply_markup=keyboard_generator.main_menu_keyboard)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_MAIN_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
     elif message.text == confirm_button:
-        bot.send_message(message.chat.id, 'ГЦ. Ті справівсі', reply_markup=keyboard_generator.main_menu_keyboard)
-        db.change_link(add_link_dict[message.chat.id]['link'], add_link_dict[message.chat.id]['password'],
-                       message.chat.id, add_link_dict[message.chat.id]['lesson'],
-                       add_link_dict[message.chat.id]['type'])
-        db.set_state(message.from_user.username, stateworker.States.S_MAIN_MENU.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
+        bot.send_message(message.chat.id,
+                         f"Ссылка для <b>'{user_links_dict[message.chat.id]['subject_type']}</b> - "
+                         f"<b>{user_links_dict[message.chat.id]['subject']}'</b> успешно изменена.",
+                         reply_markup=keyboard_generator.main_menu_keyboard,
+                         parse_mode='HTML')
+        db.change_link(user_links_dict[message.chat.id]['link'],
+                       user_links_dict[message.chat.id]['password'],
+                       message.chat.id,
+                       user_links_dict[message.chat.id]['subject'],
+                       user_links_dict[message.chat.id]['subject_type'])
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_MAIN_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
     elif message.text == change_link_button:
-        if add_link_dict[message.chat.id]['password'] == '':
-            bot.send_message(message.chat.id, f"Предмет: {add_link_dict[message.chat.id]['lesson']}\n"
-                                              f"Тип занятия: {add_link_dict[message.chat.id]['type']}\n"
-                                              f"Ссылка: {add_link_dict[message.chat.id]['link']}\n\n"
-                                              f"Тык добавить пас, готово или отмена",
+        if user_links_dict[message.chat.id]['password'] == '':
+            bot.send_message(message.chat.id,
+                             f"Предмет: <b>{user_links_dict[message.chat.id]['subject']}</b>\n"
+                             f"Тип занятия: <b>{user_links_dict[message.chat.id]['subject_type']}</b>\n"
+                             f"Ссылка: <b>{user_links_dict[message.chat.id]['link']}</b>\n\n"
+                             f"Ты можешь:\n"
+                             f"1. Отправить мне <b>ссылку</b> повторно (заменяется предыдущая)\n"
+                             f"2. Добавить <b>пароль</b>, нажав <b>'{add_password_button}'</b>\n"
+                             f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
+                             f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
                              reply_markup=keyboard_generator.generate_default_keyboard_row(
                                  (add_password_button, confirm_button),
-                                 (cancel_button,)))
+                                 (cancel_button,)),
+                             parse_mode='HTML')
 
-        elif add_link_dict[message.chat.id]['password'] != '':
-            bot.send_message(message.chat.id, f"Предмет: {add_link_dict[message.chat.id]['lesson']}\n"
-                                              f"Тип занятия: {add_link_dict[message.chat.id]['type']}\n"
-                                              f"Ссылка: {add_link_dict[message.chat.id]['link']}\n"
-                                              f"Пароль: {add_link_dict[message.chat.id]['password']}\n\n"
-                                              f"ТЫК изменить пас, готово или отмена",
+        elif user_links_dict[message.chat.id]['password'] != '':
+            bot.send_message(message.chat.id,
+                             f"Предмет: <b>{user_links_dict[message.chat.id]['subject']}</b>\n"
+                             f"Тип занятия: <b>{user_links_dict[message.chat.id]['subject_type']}</b>\n"
+                             f"Ссылка: <b>{user_links_dict[message.chat.id]['link']}</b>\n"
+                             f"Пароль: <b>{user_links_dict[message.chat.id]['password']}</b>\n\n"
+                             f"Ты можешь:\n"
+                             f"1. Отправить мне <b>ссылку</b> повторно (заменяется предыдущая)\n"
+                             f"2. Изменить <b>пароль</b>, нажав <b>'{change_password_button}'</b>\n"
+                             f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
+                             f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
                              reply_markup=keyboard_generator.generate_default_keyboard_row(
                                  (change_password_button, confirm_button),
-                                 (cancel_button,)))
-        db.set_state(message.from_user.username, stateworker.States.S_CHANGE_LINK.value,
-                     time.strftime('%d/%m/%y, %X'), message.chat.id)
+                                 (cancel_button,)),
+                             parse_mode='HTML')
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_CHANGE_LINK.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
     elif message.text == message.text:
-        if add_link_dict[message.chat.id]['password'] == '':
-            add_link_dict[message.chat.id]['password'] = message.text
-            bot.send_message(message.chat.id, f"Предмет: {add_link_dict[message.chat.id]['lesson']}\n"
-                                              f"Тип занятия: {add_link_dict[message.chat.id]['type']}\n"
-                                              f"Ссылка: {add_link_dict[message.chat.id]['link']}\n\n"
-                                              f"Тык добавить пас или готово",
+        user_links_dict[message.chat.id]['password'] = message.text
+        if user_links_dict[message.chat.id]['password'] == '':
+            bot.send_message(message.chat.id,
+                             f"Предмет: <b>{user_links_dict[message.chat.id]['subject']}</b>\n"
+                             f"Тип занятия: <b>{user_links_dict[message.chat.id]['subject_type']}</b>\n"
+                             f"Ссылка: <b>{user_links_dict[message.chat.id]['link']}</b>\n\n"
+                             f"Ты можешь:\n"
+                             f"1. Отправить мне <b>пароль</b>\n"
+                             f"2. Изменить <b>ссылку</b>, нажав <b>'{change_link_button}'</b>\n"
+                             f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
+                             f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
                              reply_markup=keyboard_generator.generate_default_keyboard_row(
                                  (change_link_button, confirm_button),
-                                 (cancel_button,)))
-        elif add_link_dict[message.chat.id]['password'] != '':
-            add_link_dict[message.chat.id]['password'] = message.text
-            bot.send_message(message.chat.id, f"Предмет: {add_link_dict[message.chat.id]['lesson']}\n"
-                                              f"Тип занятия: {add_link_dict[message.chat.id]['type']}\n"
-                                              f"Ссылка: {add_link_dict[message.chat.id]['link']}\n"
-                                              f"Пароль: {add_link_dict[message.chat.id]['password']}\n\n"
-                                              f"Добавляй пассворд",
+                                 (cancel_button,)),
+                             parse_mode='HTML')
+
+        elif user_links_dict[message.chat.id]['password'] != '':
+            user_links_dict[message.chat.id]['password'] = message.text
+            bot.send_message(message.chat.id,
+                             f"Предмет: <b>{user_links_dict[message.chat.id]['subject']}</b>\n"
+                             f"Тип занятия: <b>{user_links_dict[message.chat.id]['subject_type']}</b>\n"
+                             f"Ссылка: <b>{user_links_dict[message.chat.id]['link']}</b>\n"
+                             f"Пароль: <b>{user_links_dict[message.chat.id]['password']}</b>\n\n"
+                             f"Ты можешь:\n"
+                             f"1. Отправить мне <b>пароль</b> повторно (заменяется предыдущий)\n"
+                             f"2. Изменить <b>ссылку</b>, нажав <b>'{change_link_button}'</b>\n"
+                             f"3. Нажать <b>'{confirm_button}'</b> (ссылка будет видна в расписании) и перейти в главное меню\n"
+                             f"4. Нажать <b>'{cancel_button}'</b> (ссылки не будет видно в расписании) и перейти в главное меню",
                              reply_markup=keyboard_generator.generate_default_keyboard_row(
                                  (change_link_button, confirm_button),
-                                 (cancel_button,)))
+                                 (cancel_button,)),
+                             parse_mode='HTML')
 
-
-"""#####################################################################################################################
-                                                    REMOVE LINK
-#####################################################################################################################"""
-
-
-@bot.callback_query_handler(
-    func=lambda call: db.get_state(call.message.chat.id).__class__ == tuple and db.get_state(call.message.chat.id)[
-        0] == stateworker.States.S_MAIN_MENU.value)
-def remove_link(call):
-    pass
 
 """#####################################################################################################################
                                                     SCHEDULE MENU
@@ -606,7 +816,7 @@ def settings_menu(message):
                      time.strftime('%d/%m/%y, %X'), message.chat.id)
 
     if message.text == notifications_button:
-        bot.reply_to(message, not_available_reply)
+        bot.reply_to(message, service.not_available_reply)
         db.set_state(message.from_user.username, stateworker.States.S_SETTINGS_MENU.value,
                      time.strftime('%d/%m/%y, %X'), message.chat.id)
 

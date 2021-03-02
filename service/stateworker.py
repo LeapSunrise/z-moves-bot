@@ -13,4 +13,3 @@ class States(Enum):
     S_INPUT_PASSWORD = "input_password"
     S_CHANGE_LINK = "change_link"
     S_CHANGE_PASSWORD = "change_password"
-

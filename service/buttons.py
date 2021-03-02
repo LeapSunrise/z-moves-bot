@@ -20,7 +20,8 @@ help_button = '❓ Помощь'
 inline_add_link_button = telebot.types.InlineKeyboardButton(text='Добавить ссылку', callback_data='add_link')
 inline_change_link_button = telebot.types.InlineKeyboardButton(text='Изменить ссылку', callback_data='change_link')
 inline_remove_link_button = telebot.types.InlineKeyboardButton(text='Удалить ссылку', callback_data='remove_link')
-inline_remove_link_confirm_button = telebot.types.InlineKeyboardButton(text='Подтвердить', callback_data='confirm_remove_link')
+inline_remove_link_confirm_button = telebot.types.InlineKeyboardButton(text='Подтвердить',
+                                                                       callback_data='confirm_remove_link')
 inline_remove_link_cancel_button = telebot.types.InlineKeyboardButton(text='Отмена', callback_data='cancel_remove_link')
 
 inline_lec_button = telebot.types.InlineKeyboardButton(text='Лек', callback_data='lec')

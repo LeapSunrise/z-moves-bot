@@ -164,7 +164,8 @@ def get_links_to_change(user_id, subject, subject_type):
     conn = get_connection()
     c = conn.cursor()
     c.execute(
-        'SELECT * FROM links WHERE user_id = %s AND subject = %s AND subject_type = %s', (user_id, subject, subject_type,)
+        'SELECT * FROM links WHERE user_id = %s AND subject = %s AND subject_type = %s',
+        (user_id, subject, subject_type,)
     )
 
     return c.fetchone()
@@ -176,5 +177,15 @@ def change_link(link, password, user_id, subject, subject_type):
     c.execute(
         'UPDATE links SET link = %s, password = %s WHERE user_id = %s AND subject = %s AND subject_type = %s',
         (link, password, user_id, subject, subject_type,)
+    )
+    conn.commit()
+
+
+def remove_link(user_id, subject, subject_type):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        'DELETE FROM links WHERE user_id = %s AND subject = %s AND subject_type = %s',
+        (user_id, subject, subject_type,)
     )
     conn.commit()

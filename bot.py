@@ -24,7 +24,7 @@ def start_message(message):
     if db.get_user_info(message.chat.id) is None:
         bot.send_message(message.chat.id,
                          f"Привет, {user_name}! 🥴🤙\nZ-Moves на связи 😎\n\n"
-                         f"Для работы со мной напиши мне название своей группы.\n\nПример: <b><b>IO-83</b></b>",
+                         f"Для работы со мной напиши мне название своей группы.\n\nПример: <b>IO-83<</b>",
                          parse_mode='HTML')
         db.register_user(message.chat.id,
                          message.from_user.username,

@@ -1,4 +1,5 @@
 import os
+import time
 
 import psycopg2
 
@@ -7,6 +8,7 @@ __connection = None
 
 def get_connection():
     global db
+
     db = psycopg2.connect(
         dbname=os.environ['DB_NAME'],
         user=os.environ['DB_USERNAME'],
@@ -23,10 +25,12 @@ def init_db(force: bool = True):
 
     if force:
         c.execute('DROP TABLE IF EXISTS users CASCADE')
-        c.execute('DROP TABLE IF EXISTS hotline')
+        c.execute('DROP TABLE IF EXISTS hotlines')
         c.execute('DROP TABLE IF EXISTS links')
         c.execute('DROP TABLE IF EXISTS mails')
         c.execute('DROP TABLE IF EXISTS notifications')
+
+
 
     c.execute('''
                 CREATE TABLE IF NOT EXISTS users (
@@ -40,12 +44,12 @@ def init_db(force: bool = True):
             ''')
 
     c.execute('''
-            CREATE TABLE IF NOT EXISTS hotline (
-                user_id     int,
-                subject     text not null,
-                task        text not null,
-                deadline    text not null,
-                link        text,
+            CREATE TABLE IF NOT EXISTS hotlines (
+                user_id         int,
+                subject         text not null,
+                description     text not null,
+                date            text not null,
+                addition_date   text not null,
 
                 foreign key(user_id) references users(user_id)
             )
@@ -58,7 +62,7 @@ def init_db(force: bool = True):
                     subject_type text not null,
                     link         text not null,
                     password     text,
-                    description  text,
+                    addition_date  text not null,
 
                     foreign key(user_id) references users(user_id)
                 )
@@ -136,13 +140,24 @@ def get_user_info(uid):
     return c.fetchone()
 
 
-def add_link(user_id: int, subject, subject_type, link, password='', description=''):
+def add_link(user_id, subject, subject_type, link, password, addition_time):
     conn = get_connection()
     c = conn.cursor()
     c.execute(
-        'INSERT INTO links (user_id, subject, subject_type, link, password, description) '
+        'INSERT INTO links (user_id, subject, subject_type, link, password, addition_date) '
         'VALUES (%s, %s, %s, %s, %s, %s)',
-        (user_id, subject, subject_type, link, password, description,)
+        (user_id, subject, subject_type, link, password, addition_time,)
+    )
+    conn.commit()
+
+
+def add_hotline(user_id, subject, description, date, addition_date):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        'INSERT INTO hotlines (user_id, subject, description, date, addition_date)'
+        'VALUES (%s, %s, %s, %s, %s)',
+        (user_id, subject, description, date, addition_date)
     )
     conn.commit()
 
@@ -160,32 +175,95 @@ def get_links(uid):
         return q
 
 
-def get_links_to_change(user_id, subject, subject_type):
+def get_hotlines(uid):
     conn = get_connection()
     c = conn.cursor()
     c.execute(
-        'SELECT * FROM links WHERE user_id = %s AND subject = %s AND subject_type = %s',
-        (user_id, subject, subject_type,)
+        'SELECT * FROM hotlines WHERE user_id = %s', (uid,)
+    )
+    q = c.fetchall()
+    hotline_text = ''
+    if len(q) == 0:
+        return None
+    else:
+        print(q)
+        return q
+
+
+def get_hotlines_to_change(user_id, subject, addition_date):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        'SELECT description, date FROM hotlines WHERE user_id = %s AND subject = %s AND addition_date = %s',
+        (user_id, subject, addition_date)
+    )
+    return c.fetchone()
+
+
+def get_links_to_change(user_id, subject, subject_type, addition_date):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        'SELECT * FROM links WHERE user_id = %s AND subject = %s AND subject_type = %s AND addition_date = %s',
+        (user_id, subject, subject_type, addition_date,)
     )
 
     return c.fetchone()
 
 
-def change_link(link, password, user_id, subject, subject_type):
+
+
+def change_link(link, password, user_id, subject, subject_type, addition_date):
     conn = get_connection()
     c = conn.cursor()
     c.execute(
-        'UPDATE links SET link = %s, password = %s WHERE user_id = %s AND subject = %s AND subject_type = %s',
-        (link, password, user_id, subject, subject_type,)
+        'UPDATE links SET link = %s, password = %s WHERE user_id = %s AND subject = %s AND subject_type = %s AND addition_date = %s',
+        (link, password, user_id, subject, subject_type, addition_date,)
     )
     conn.commit()
 
 
-def remove_link(user_id, subject, subject_type):
+def change_hotline(date, description, user_id, subject, addition_date):
     conn = get_connection()
     c = conn.cursor()
     c.execute(
-        'DELETE FROM links WHERE user_id = %s AND subject = %s AND subject_type = %s',
-        (user_id, subject, subject_type,)
+        'UPDATE hotlines SET date = %s, description = %s WHERE user_id = %s AND subject = %s AND addition_date = %s',
+        (date, description, user_id, subject, addition_date,)
     )
     conn.commit()
+
+
+def remove_link(user_id, subject, subject_type, addition_date):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        'DELETE FROM links WHERE user_id = %s AND subject = %s AND subject_type = %s AND addition_date = %s',
+        (user_id, subject, subject_type, addition_date,)
+    )
+    conn.commit()
+
+
+def remove_hotline(user_id, subject, description, date, addition_date):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        'DELETE FROM hotlines WHERE user_id = %s AND subject = %s AND description = %s AND date = %s AND addition_date = %s',
+        (user_id, subject, description, date, addition_date,)
+    )
+    conn.commit()
+
+
+def auto_remove_hotline():
+    conn = get_connection()
+    c = conn.cursor()
+    dm = f"'{time.strftime('%d.%m')}'"
+    print(dm)
+    c.execute(
+        f'SELECT date FROM hotlines WHERE date = {dm}'
+    )
+    q = c.fetchall()
+    if len(q) != 0:
+        c.execute(
+            f'DELETE FROM hotlines WHERE date = {dm}'
+        )
+        conn.commit()

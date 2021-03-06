@@ -31,9 +31,21 @@ inline_lab_button = telebot.types.InlineKeyboardButton(text='Лаб', callback_d
 inline_first_back_button = telebot.types.InlineKeyboardButton(text='Назад', callback_data='first_back_button')
 inline_second_back_button = telebot.types.InlineKeyboardButton(text='Назад', callback_data='second_back_button')
 
+
 add_password_button = 'Добавить пароль'
 change_password_button = 'Изменить пароль'
 change_link_button = 'Изменить ссылку'
+
+# main_menu/hotlines
+inline_add_hotline_button = telebot.types.InlineKeyboardButton(text='Добавить хотлайн', callback_data='add_hotline')
+inline_change_hotline_button = telebot.types.InlineKeyboardButton(text='Изменить хотлайн', callback_data='change_hotline')
+inline_remove_hotline_button = telebot.types.InlineKeyboardButton(text='Удалить хотлайн', callback_data='remove_hotline')
+
+inline_remove_hotline_confirm_button = telebot.types.InlineKeyboardButton(text='Подтвердить', callback_data='confirm_remove_hotline')
+inline_remove_hotline_cancel_button = telebot.types.InlineKeyboardButton(text='Отмена', callback_data='cancel_remove_hotline')
+
+inline_first_back_button_hotlines = telebot.types.InlineKeyboardButton(text='Назад', callback_data='first_back_button_hl')
+
 
 # schedule_menu
 today_day_button = "📝 Расписание на сегодня"

@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup
 
 import database.db as db
 
+
 free = '''
 ░░▄█████████████████▄
 ░▐████▀▒▒БОЛДАК▒▒▀████
@@ -43,7 +44,7 @@ subject_enumeration = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣']
 
 
 def get_links(user_id):
-    links = db.get_links_info(user_id)
+    links = db.get_links(user_id)
     links_text = ''
     if len(links) == 0:
         links_text = 'Вы еще не добавили ни одной ссылки.\nДля занесения ссылки перейдите в настройки ⚙'
@@ -111,43 +112,45 @@ class Schedule:
 
         schedule_title = 'Запланированные мувы на ' + weekday + ':'
         schedule_body = ''
+        hotlines_body = ''
 
-        subject_links = db.get_user_info(user_id)[2]
+        subject_links = db.get_links(user_id)
+        hotlines = db.get_hotlines(user_id)
+        print(subject_links)
+        print(hotlines)
+        les_dict = {}
         for lesson in data:
             if lesson['lesson_week'] == str(week) and lesson['day_number'] == str(day):
                 lesson_start = lesson["time_start"][:5]
                 lesson_name = lesson["lesson_name"]
                 lesson_type = lesson["lesson_type"]
-                schedule_body += '\n' + str(lesson_numbers.get(lesson_start)) + ' ' + lesson_start + ' — <i>' + \
-                                 lesson_name + '</i> <b>\n' + \
-                                 lesson_type + "</b> — " + \
-                                 lesson["teacher_name"] + '\n'
+                schedule_body += f"\n{str(lesson_numbers.get(lesson_start))} {lesson_start} - <i>{lesson_name}</i>" \
+                                 f"\n<b>{lesson_type}</b> - {lesson['teacher_name']}\n"
 
-                for s in subject_links:
-                    if s[0] == lesson_name and s[1] == lesson_type:
-                        subject_link = '\t<u>Ссылка на конференцию:</u> {0}\n'.format(s[2])
-                        if s[3] is not None:
-                            subject_link += "\tКод доступа: <code>{0}</code>\n".format(s[3])
+                if subject_links is not None:
+                    for s in subject_links:
+                        if s[1] == lesson_name and s[2] == lesson_type:
+                            subject_link = f"Ссылка на конференцию: {s[3]}\n"
+                            if s[4] != '' and not None:
+                                subject_link += f"Код доступа: <code>{s[4]}</code>\n"
 
-                        if s[4] is not None:
-                            subject_link += '\tℹ️{0}\n'.format(s[4])
+                            schedule_body += subject_link
 
-                        schedule_body += subject_link
+        if hotlines is not None:
+            print(hotlines)
+            for i in hotlines:
+                hotlines_body += f"{i[1]} - {i[2]} - {i[3]}\n"
+
+
 
         if schedule_body == '':
             schedule_body = free
 
-        hl = 'db.get_hotlines_info(user_id)'
+        hotlines = db.get_hotlines(user_id)
+        sep = '—' * 15
 
-        return '''
-{title}
-———————————————
-{schedule}
-———————————————
-👺 Hotlines: 
-{hotlines}
-———————————————
-            '''.format(title=schedule_title, schedule=schedule_body, hotlines=hl)
+        return f"{schedule_title}\n{sep}\n{schedule_body}\n{sep}\n👺 Хотлайны:\n\n{hotlines_body}\n{sep}"
+
 
     @staticmethod
     def get_list_of_subjects(user_id, week, day):

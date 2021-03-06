@@ -20,8 +20,18 @@ lorem_ipsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do e
 #####################################################################################################################"""
 
 
+blocked_users = [328189056]
+
+
+@bot.message_handler(func=lambda message: message.chat.id in blocked_users)
+def black_list(message):
+    bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAEB9bhgQ6DCUQz5y_Mh7uwdvVxAWMiosgACEQAD1gWXKgGow7AQ9URiHgQ')
+    bot.send_message(message.chat.id, 'лол, ты в чс, даун', reply_markup=telebot.types.ReplyKeyboardRemove())
+
+
 @bot.message_handler(commands=['start', 'START'])
 def start_message(message):
+
     user_name = message.from_user.first_name
     if message.from_user.last_name:
         user_name = f"{user_name} {message.from_user.last_name}"
@@ -41,6 +51,7 @@ def start_message(message):
         bot.send_message(message.chat.id,
                          f"Перестань тестировать меня. Введи группу плес")
 
+
     else:
         bot.send_message(message.chat.id,
                          f"Главное меню",
@@ -54,10 +65,10 @@ def start_message(message):
 @bot.message_handler(func=lambda message: (db.get_state(message.chat.id).__class__ == tuple and
                                            db.get_state(message.chat.id)[
                                                0] == stateworker.States.S_REGISTRATION.value) or
-
                                           (db.get_state(message.chat.id).__class__ == tuple and
                                            db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_GROUP.value))
 def group_registration(message):
+    print(db.get_state(message.chat.id)[0])
     if Schedule.is_group_exist(message.text):
         bot.send_message(message.chat.id,
                          f"Есть такая! Ну а теперь приступим 🙂",

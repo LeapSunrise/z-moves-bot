@@ -1,5 +1,5 @@
 import telebot
-import time
+from datetime import datetime
 from schedule_parser.schedule_parser import *
 from service.buttons import *
 
@@ -70,8 +70,11 @@ def generate_inline_linked_subjects_to_change(chat_id):
 
 def generate_inline_hotlined_subjects_to_change(chat_id):
     keyboard = telebot.types.InlineKeyboardMarkup()
+
     if db.get_hotlines(chat_id) is not None:
+
         for item in db.get_hotlines(chat_id):
+
             keyboard.add(telebot.types.InlineKeyboardButton(text=f"{item[3]} - {item[1]}",
                                                             callback_data=f"hlch_{item[4]}"))
         keyboard.add(inline_first_back_button_hotlines)

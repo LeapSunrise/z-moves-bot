@@ -179,7 +179,7 @@ def get_hotlines(uid):
     conn = get_connection()
     c = conn.cursor()
     c.execute(
-        'SELECT * FROM hotlines WHERE user_id = %s', (uid,)
+        'SELECT * FROM hotlines WHERE user_id = %s ORDER BY ("right"(date, 2), "left"(date, 2))', (uid,)
     )
     q = c.fetchall()
     hotline_text = ''

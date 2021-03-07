@@ -146,7 +146,6 @@ class Schedule:
         if schedule_body == '':
             schedule_body = free
 
-        hotlines = db.get_hotlines(user_id)
         sep = '—' * 15
 
         return f"{schedule_title}\n{sep}\n{schedule_body}\n{sep}\n👺 Хотлайны:\n\n{hotlines_body}\n{sep}"

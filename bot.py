@@ -25,8 +25,11 @@ blocked_users = [328189056]
 
 @bot.message_handler(func=lambda message: message.chat.id in blocked_users)
 def black_list(message):
-    bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAEB9bhgQ6DCUQz5y_Mh7uwdvVxAWMiosgACEQAD1gWXKgGow7AQ9URiHgQ')
-    bot.send_message(message.chat.id, 'лол, ты в чс, даун', reply_markup=telebot.types.ReplyKeyboardRemove())
+    bot.send_sticker(message.chat.id,
+                     'CAACAgIAAxkBAAEB9bhgQ6DCUQz5y_Mh7uwdvVxAWMiosgACEQAD1gWXKgGow7AQ9URiHgQ')
+    bot.send_message(message.chat.id,
+                     'лол, ты в чс, даун',
+                     reply_markup=telebot.types.ReplyKeyboardRemove())
 
 
 @bot.message_handler(commands=['start', 'START'])
@@ -49,12 +52,12 @@ def start_message(message):
 
     elif db.get_user_info(message.chat.id)[2] is None:
         bot.send_message(message.chat.id,
-                         f"Перестань тестировать меня. Введи группу плес")
+                         "Перестань тестировать меня. Введи группу плес")
 
 
     else:
         bot.send_message(message.chat.id,
-                         f"Главное меню",
+                         "Главное меню",
                          reply_markup=keyboard_generator.main_menu_keyboard)
         db.set_state(message.from_user.username,
                      stateworker.States.S_MAIN_MENU.value,
@@ -63,12 +66,10 @@ def start_message(message):
 
 
 @bot.message_handler(func=lambda message: (db.get_state(message.chat.id).__class__ == tuple and
-                                           db.get_state(message.chat.id)[
-                                               0] == stateworker.States.S_REGISTRATION.value) or
-                                          (db.get_state(message.chat.id).__class__ == tuple and
-                                           db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_GROUP.value))
+                                           (db.get_state(message.chat.id)[0] == stateworker.States.S_REGISTRATION.value or
+                                           db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_GROUP.value)))
 def group_registration(message):
-    print(db.get_state(message.chat.id)[0])
+
     if Schedule.is_group_exist(message.text):
         bot.send_message(message.chat.id,
                          f"Есть такая! Ну а теперь приступим 🙂",
@@ -81,7 +82,7 @@ def group_registration(message):
 
     elif message.text == cancel_button:
         bot.send_message(message.chat.id,
-                         f"Настройки",
+                         "Настройки",
                          reply_markup=keyboard_generator.settings_menu_keyboard)
         db.set_state(message.from_user.username,
                      stateworker.States.S_SETTINGS_MENU.value,
@@ -89,8 +90,9 @@ def group_registration(message):
                      message.chat.id)
 
     else:
-        bot.send_message(message.chat.id, '<b>{}</b>? Что-то я о такой группе ещё не слышал 🤥'
-                                          'Попробуй ещё.'.format(message.text), parse_mode='HTML')
+        bot.send_message(message.chat.id,
+                         f"<b>{message.text}</b>? Что-то я о такой группе ещё не слышал 🤥",
+                         parse_mode='HTML')
         db.set_state(message.from_user.username,
                      stateworker.States.S_REGISTRATION.value,
                      time.strftime('%d/%m/%y, %X'),
@@ -105,7 +107,7 @@ def group_registration(message):
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
                                           db.get_state(message.chat.id)[0] == stateworker.States.S_MAIN_MENU.value)
 def main_menu(message):
-    db.auto_remove_hotline()
+    #db.auto_remove_hotline()
     if message.text == schedule_button:
         bot.send_message(message.chat.id,
                          f"Выбери опцию отображения расписания.",
@@ -389,7 +391,6 @@ def links_menu(call):
                                                user_links_dict[call.message.chat.id]['subject_type'],
                                                user_links_dict[call.message.chat.id]['addition_date'])[4]  # 4 - пароль
 
-                    print(user_links_dict)
 
                     if user_links_dict[call.message.chat.id]['password'] == '':
                         bot.edit_message_text(f"Ты удаляешь:\n"
@@ -554,8 +555,8 @@ def input_hotline_date(call: CallbackQuery):
                               f"Дата: {date.strftime('%d.%m')}\n\n"
                               f"Теперь добавь описание :)",
                          reply_markup=ReplyKeyboardRemove())
-        print(len(user_hotlines_dict))
-        print(user_hotlines_dict)
+
+
         if len(user_hotlines_dict[call.message.chat.id]) == 3:
             db.set_state(call.message.from_user.username,
                          stateworker.States.S_INPUT_HOTLINE.value,
@@ -638,7 +639,7 @@ def change_hotline(message):
                      stateworker.States.S_MAIN_MENU.value,
                      time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
-        print(user_hotlines_dict)
+
         db.change_hotline(user_hotlines_dict[message.chat.id]['date'],
                           user_hotlines_dict[message.chat.id]['description'],
                           message.chat.id,

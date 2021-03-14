@@ -1,5 +1,5 @@
 import os
-import time
+from datetime import datetime, timedelta
 
 import psycopg2
 
@@ -19,17 +19,10 @@ def get_connection():
     return db
 
 
-def init_db(force: bool = True):
+
+def init_db():
     conn = get_connection()
     c = conn.cursor()
-
-    if force:
-        c.execute('DROP TABLE IF EXISTS users CASCADE')
-        c.execute('DROP TABLE IF EXISTS hotlines')
-        c.execute('DROP TABLE IF EXISTS links')
-        c.execute('DROP TABLE IF EXISTS mails')
-        c.execute('DROP TABLE IF EXISTS notifications')
-
 
 
     c.execute('''
@@ -86,6 +79,15 @@ def init_db(force: bool = True):
                         foreign key(user_id) references users(user_id)
                     )
             ''')
+
+    c.execute('''
+                    CREATE TABLE IF NOT EXISTS blocked_users(
+                        user_id         int primary key,
+                        user_name       text,
+                        first_activity  text,
+                        last_activity   text 
+                    )
+        ''')
 
     conn.commit()
 
@@ -256,14 +258,48 @@ def remove_hotline(user_id, subject, description, date, addition_date):
 def auto_remove_hotline():
     conn = get_connection()
     c = conn.cursor()
-    dm = f"'{time.strftime('%d.%m')}'"
+
+    dm = f"'{datetime.strftime(datetime.now() - timedelta(2), '%d.%m')}'"
     print(dm)
+
     c.execute(
-        f'SELECT date FROM hotlines WHERE date = {dm}'
+        f'SELECT * FROM hotlines WHERE date = {dm}'
     )
     q = c.fetchall()
+
     if len(q) != 0:
         c.execute(
             f'DELETE FROM hotlines WHERE date = {dm}'
         )
         conn.commit()
+
+
+def update_blocked_users(user_id, user_name, first_activity, last_activity):
+    conn = get_connection()
+    c = conn.cursor()
+    first_act = get_blocked_user(user_id)[2]
+    if first_act is None:
+
+        c.execute(
+            'UPDATE blocked_users SET user_name = %s, first_activity = %s, last_activity = %s WHERE user_id = %s',
+            (user_name, first_activity, last_activity, user_id,)
+        )
+        conn.commit()
+
+    else:
+        c.execute(
+            'UPDATE blocked_users SET user_name = %s, last_activity = %s WHERE user_id = %s',
+            (user_name, last_activity, user_id,)
+        )
+        conn.commit()
+
+
+def get_blocked_user(user_id):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        'SELECT * FROM blocked_users WHERE user_id = %s',
+        (user_id,)
+    )
+
+    return c.fetchone()

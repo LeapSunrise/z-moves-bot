@@ -1,5 +1,3 @@
-import telebot
-from datetime import datetime
 from schedule_parser.schedule_parser import *
 from service.buttons import *
 
@@ -108,3 +106,11 @@ def generate_inline_hotlined_subjects_to_remove(chat_id):
 
     else:
         return ''
+
+
+def rozklad_api_work_checker():
+    try:
+        requests.get('https://api.rozklad.org.ua/', timeout=3)
+
+    except:
+        return False

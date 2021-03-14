@@ -12,7 +12,7 @@ schedule_button = '📆 Расписание'
 settings_button = '⚙ Настройки'
 links_button = '🔗 Ссылки'
 hotlines_button = '👺 Хотлайны'
-mails_button = '✉️ Почты'
+mails_button = '❓❓❓'
 info_button = 'ℹ️Инфо'
 help_button = '❓ Помощь'
 
@@ -77,3 +77,6 @@ change_group_button = '‍🎓 Изменить группу'
 back_button = '⬅️Назад'
 confirm_button = '✅ Готово'
 cancel_button = '❌ Отмена'
+
+# апи умер
+dead_api = 'Проверка на жизнь API'

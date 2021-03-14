@@ -43,6 +43,7 @@ lesson_numbers = {
 subject_enumeration = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣']
 
 
+
 def get_links(user_id):
     links = db.get_links(user_id)
     links_text = ''
@@ -56,10 +57,14 @@ def get_links(user_id):
     return links_text
 
 
+
 def get_current_week():
-    week_url = 'http://api.rozklad.org.ua/v2/weeks'
-    week = requests.get(week_url).json()['data']
-    return week
+    try:
+        return requests.get('http://api.rozklad.org.ua/v2/weeks', timeout=3).json()['data']
+    except requests.exceptions.ConnectionError:
+        return 'prosto privet. prosto kak dela...'
+
+
 
 
 def show_day(user_id: int, wd: str, day: int):
@@ -100,112 +105,127 @@ class Schedule:
 
     @staticmethod
     def is_group_exist(group: str):
-        url = Schedule.url_for_students_pattern
-        return requests.get(url.format(group)).ok
+        try:
+            url = Schedule.url_for_students_pattern
+            return requests.get(url.format(group), timeout=3).ok
+        except requests.exceptions.ConnectionError:
+            return 'lox'
 
     @staticmethod
     def show_schedule(user_id, week, day, weekday):
-        user = db.get_user_info(user_id)[2]
-        url = Schedule.url_for_students_pattern
-        r = requests.get(url.format(user))
-        data = r.json()['data']
+        try:
+            user = db.get_user_info(user_id)[2]
+            url = Schedule.url_for_students_pattern
+            r = requests.get(url.format(user), timeout=3)
+            data = r.json()['data']
 
-        schedule_title = 'Запланированные мувы на ' + weekday + ':'
-        schedule_body = ''
-        hotlines_body = ''
+            schedule_title = 'Запланированные мувы на ' + weekday + ':'
+            schedule_body = ''
+            hotlines_body = ''
 
-        subject_links = db.get_links(user_id)
-        hotlines = db.get_hotlines(user_id)
-        print(subject_links)
-        print(hotlines)
-        les_dict = {}
-        for lesson in data:
-            if lesson['lesson_week'] == str(week) and lesson['day_number'] == str(day):
-                lesson_start = lesson["time_start"][:5]
-                lesson_name = lesson["lesson_name"]
-                lesson_type = lesson["lesson_type"]
-                schedule_body += f"\n{str(lesson_numbers.get(lesson_start))} {lesson_start} - <i>{lesson_name}</i>" \
-                                 f"\n<b>{lesson_type}</b> - {lesson['teacher_name']}\n"
-
-                if subject_links is not None:
-                    for s in subject_links:
-                        if s[1] == lesson_name and s[2] == lesson_type:
-                            subject_link = f"Ссылка на конференцию: {s[3]}\n"
-                            if s[4] != '' and not None:
-                                subject_link += f"Код доступа: <code>{s[4]}</code>\n"
-
-                            schedule_body += subject_link
-
-        if hotlines is not None:
+            subject_links = db.get_links(user_id)
+            hotlines = db.get_hotlines(user_id)
+            print(subject_links)
             print(hotlines)
-            for i in hotlines:
-                hotlines_body += f"{i[1]} - {i[2]} - {i[3]}\n"
+            les_dict = {}
+            for lesson in data:
+                if lesson['lesson_week'] == str(week) and lesson['day_number'] == str(day):
+                    lesson_start = lesson["time_start"][:5]
+                    lesson_name = lesson["lesson_name"]
+                    lesson_type = lesson["lesson_type"]
+                    schedule_body += f"\n{str(lesson_numbers.get(lesson_start))} {lesson_start} - <i>{lesson_name}</i>" \
+                                     f"\n<b>{lesson_type}</b> - {lesson['teacher_name']}\n"
+
+                    if subject_links is not None:
+                        for s in subject_links:
+                            if s[1] == lesson_name and s[2] == lesson_type:
+                                subject_link = f"Ссылка на конференцию: {s[3]}\n"
+                                if s[4] != '' and not None:
+                                    subject_link += f"Код доступа: <code>{s[4]}</code>\n"
+
+                                schedule_body += subject_link
+
+            if hotlines is not None:
+                print(hotlines)
+                for i in hotlines:
+                    hotlines_body += f"{i[1]} - {i[2]} - {i[3]}\n"
 
 
 
-        if schedule_body == '':
-            schedule_body = free
 
-        sep = '—' * 15
+            if schedule_body == '':
+                schedule_body = free
 
-        return f"{schedule_title}\n{sep}\n{schedule_body}\n{sep}\n👺 Хотлайны:\n\n{hotlines_body}\n{sep}"
+            sep = '—' * 15
 
+            return f"{schedule_title}\n{sep}\n{schedule_body}\n{sep}\n👺 Хотлайны:\n\n{hotlines_body}\n{sep}"
 
+        except requests.exceptions.ConnectionError:
+            return 'lox2'
     @staticmethod
     def get_list_of_subjects(user_id, week, day):
-        subjects = []
-        user = db.get_user_info(user_id)[2]
-        url = Schedule.url_for_students_pattern
-        r = requests.get(url.format(user[0]))
-        data = r.json()['data']
+        try:
+            subjects = []
+            user = db.get_user_info(user_id)[2]
+            url = Schedule.url_for_students_pattern
+            r = requests.get(url.format(user[0]), timeout=3)
+            data = r.json()['data']
 
-        for lesson in data:
-            if lesson['lesson_week'] == str(week) and lesson['day_number'] == str(day):
-                subject = Subject(lesson["lesson_name"], lesson["lesson_type"], lesson["teacher_name"])
-                subjects.append(subject)
+            for lesson in data:
+                if lesson['lesson_week'] == str(week) and lesson['day_number'] == str(day):
+                    subject = Subject(lesson["lesson_name"], lesson["lesson_type"], lesson["teacher_name"])
+                    subjects.append(subject)
 
-        return subjects
+            return subjects
+        except requests.exceptions.ConnectionError:
+            return 'lox3'
 
     @staticmethod
     def get_lessons(user_id):
-        reply = []
-        user = db.get_user_info(user_id)[2]
-        url = Schedule.url_for_students_pattern
-        r = requests.get(url.format(user))
-        data = r.json()['data']
+        try:
+            reply = []
+            user = db.get_user_info(user_id)[2]
+            url = Schedule.url_for_students_pattern
+            r = requests.get(url.format(user), timeout=3)
+            data = r.json()['data']
 
-        for lesson in data:
-            reply.append(lesson["lesson_full_name"])
+            for lesson in data:
+                reply.append(lesson["lesson_full_name"])
 
-        return set(reply)
+            return set(reply)
+        except requests.exceptions.ConnectionError:
+            return 'lox4'
 
     @staticmethod
     def get_session_for_schedule(user_id):
-        user = db.get_user_info(user_id)[2]
-        url = 'http://api.rozklad.org.ua/v2/groups/{0}'
-        r = requests.get(url.format(user[0]))
-        data = r.json()['data']
+        try:
+            user = db.get_user_info(user_id)[2]
+            url = 'http://api.rozklad.org.ua/v2/groups/{0}'
+            r = requests.get(url.format(user[0]), timeout=3)
+            data = r.json()['data']
 
-        group_token = data["group_url"][data["group_url"].index("g="):]
-        full_url = 'http://rozklad.kpi.ua/Schedules/ViewSessionSchedule.aspx?' + group_token
+            group_token = data["group_url"][data["group_url"].index("g="):]
+            full_url = 'http://rozklad.kpi.ua/Schedules/ViewSessionSchedule.aspx?' + group_token
 
-        req = requests.get(full_url)
+            req = requests.get(full_url, timeout=3)
 
-        soup = BeautifulSoup(req.content, 'html.parser')
+            soup = BeautifulSoup(req.content, 'html.parser')
 
-        trs = []
-        rows = soup.find_all('tr')
-        schedule = ''
-        for row in rows:
-            trs.append(row.find_all('td'))
+            trs = []
+            rows = soup.find_all('tr')
+            schedule = ''
+            for row in rows:
+                trs.append(row.find_all('td'))
 
-        i = 0
-        for td in trs:
-            if td[1].getText():
-                schedule += '\n⚠️<b>' + td[0].getText() + '</b>\n' + subject_enumeration[i] + ' '
-                for link in td[1].find_all('a', href=True):
-                    schedule += '\n' + link.getText()
-                schedule += ' : ' + td[1].getText()[-5:] + '\n'
-                i += 1
+            i = 0
+            for td in trs:
+                if td[1].getText():
+                    schedule += '\n⚠️<b>' + td[0].getText() + '</b>\n' + subject_enumeration[i] + ' '
+                    for link in td[1].find_all('a', href=True):
+                        schedule += '\n' + link.getText()
+                    schedule += ' : ' + td[1].getText()[-5:] + '\n'
+                    i += 1
 
-        return show_exams(schedule)
+            return show_exams(schedule)
+        except requests.exceptions.ConnectionError:
+            return 'lox6'

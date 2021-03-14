@@ -1,94 +1,25 @@
-import os
 from datetime import datetime, timedelta
+import src.config.config as config
 
 import psycopg2
+
 
 __connection = None
 
 
 def get_connection():
-    global db
-
     db = psycopg2.connect(
-        dbname=os.environ['DB_NAME'],
-        user=os.environ['DB_USERNAME'],
-        password=os.environ['DB_PASSWORD'],
-        host=os.environ['DB_HOST'],
-        port=os.environ['DB_PORT']
+        dbname=config.DB_NAME,
+        user=config.DB_USERNAME,
+        password=config.DB_PASSWORD,
+        host=config.DB_HOST,
+        port=config.DB_PORT
     )
     return db
 
 
-
 def init_db():
     conn = get_connection()
-    c = conn.cursor()
-
-
-    c.execute('''
-                CREATE TABLE IF NOT EXISTS users (
-                    user_id             int  primary key,
-                    user_name           text,
-                    group_name          text,
-                    state               text,
-                    registration_date   text,
-                    last_activity       text 
-                )
-            ''')
-
-    c.execute('''
-            CREATE TABLE IF NOT EXISTS hotlines (
-                user_id         int,
-                subject         text not null,
-                description     text not null,
-                date            text not null,
-                addition_date   text not null,
-
-                foreign key(user_id) references users(user_id)
-            )
-        ''')
-
-    c.execute('''
-                CREATE TABLE IF NOT EXISTS links (
-                    user_id      int,
-                    subject      text not null,
-                    subject_type text not null,
-                    link         text not null,
-                    password     text,
-                    addition_date  text not null,
-
-                    foreign key(user_id) references users(user_id)
-                )
-            ''')
-
-    c.execute('''
-                CREATE TABLE IF NOT EXISTS mails (
-                    user_id     int,
-                    link        text not null,
-                    description text not null,
-
-                    foreign key(user_id) references users(user_id)
-                )
-        ''')
-
-    c.execute('''
-                    CREATE TABLE IF NOT EXISTS notifications (
-                        user_id     int,
-                        cron_date        text not null,
-
-                        foreign key(user_id) references users(user_id)
-                    )
-            ''')
-
-    c.execute('''
-                    CREATE TABLE IF NOT EXISTS blocked_users(
-                        user_id         int primary key,
-                        user_name       text,
-                        first_activity  text,
-                        last_activity   text 
-                    )
-        ''')
-
     conn.commit()
 
 
@@ -211,8 +142,6 @@ def get_links_to_change(user_id, subject, subject_type, addition_date):
     )
 
     return c.fetchone()
-
-
 
 
 def change_link(link, password, user_id, subject, subject_type, addition_date):

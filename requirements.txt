@@ -1,0 +1,14 @@
+beautifulsoup4==4.9.3
+certifi==2020.12.5
+chardet==4.0.0
+Cython==0.29.22
+idna==2.10
+postgres==3.0.0
+psycopg2-binary==2.8.6
+psycopg2-pool==1.1
+pyTelegramBotAPI==3.7.6
+requests==2.25.1
+soupsieve==2.2
+telebot-calendar==1.1
+urllib3==1.26.3
+vedis==0.7.1

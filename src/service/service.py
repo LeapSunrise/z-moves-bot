@@ -1,5 +1,5 @@
-from schedule_parser.schedule_parser import *
-from service.buttons import *
+from src.schedule_parser.schedule_parser import *
+from src.service.buttons import *
 
 not_available_reply = '⛔ В разработке'
 

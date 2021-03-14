@@ -1,5 +1,4 @@
-from service.buttons import *
-
+from src.service.buttons import *
 
 def generate_default_keyboard(*button_text_tuple):
     """

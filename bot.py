@@ -1,14 +1,14 @@
 import datetime
 import os
 import time
+
 import telebot_calendar
 from telebot.types import ReplyKeyboardRemove, CallbackQuery
 from telebot_calendar import CallbackData
 
-from schedule_parser.schedule_parser import *
-from service import keyboard_generator, stateworker
-from service import service
-from service.buttons import *
+from src.schedule_parser.schedule_parser import *
+from src.service import keyboard_generator, stateworker, service
+from src.service.buttons import *
 
 bot = telebot.TeleBot(os.environ['BOT_TOKEN'])
 db.init_db()

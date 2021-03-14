@@ -2,7 +2,7 @@ from datetime import date
 
 import telebot
 
-from schedule_parser.schedule_parser import get_current_week
+from src.schedule_parser.schedule_parser import get_current_week
 
 current_week = get_current_week()
 current_day = date.today().weekday()

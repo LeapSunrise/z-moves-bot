@@ -1,8 +1,7 @@
 import requests
 from bs4 import BeautifulSoup
 
-import database.db as db
-
+import src.database.db as db
 
 free = '''
 ░░▄█████████████████▄

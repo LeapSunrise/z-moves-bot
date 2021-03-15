@@ -12,7 +12,7 @@ from src.service import keyboard_generator, stateworker, service
 from src.service.buttons import *
 
 bot = telebot.TeleBot(config.BOT_TOKEN)
-# db.init_db()
+db.init_db()
 lorem_ipsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
 """#####################################################################################################################
                                                     START

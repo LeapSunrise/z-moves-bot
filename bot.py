@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+#!/usr/bin/python3.8.5
 import datetime
 import os
 import time
@@ -12,8 +14,9 @@ from src.service import keyboard_generator, stateworker, service
 from src.service.buttons import *
 
 bot = telebot.TeleBot(config.BOT_TOKEN)
-db.init_db()
+
 lorem_ipsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+
 """#####################################################################################################################
                                                     START
 #####################################################################################################################"""
@@ -57,42 +60,45 @@ def black_list(message):
 
 @bot.message_handler(commands=['start', 'START'])
 def start_message(message):
+    user_name = message.from_user.first_name
+    if message.from_user.last_name:
+        user_name = f"{user_name} {message.from_user.last_name}"
     bot.send_message(message.chat.id,
-                     f"Привет,  🥴🤙\nZ-Moves на связи 😎\n\n"
+                     f"Привет, {user_name} 🥴🤙\nZ-Moves на связи 😎\n\n"
                      f"Для работы со мной напиши мне название своей группы.\n\nПример: <b>IO-83</b>",
                      parse_mode='HTML')
 
 
-    # service.rozklad_api_work_checker()
-    # user_name = message.from_user.first_name
-    # if message.from_user.last_name:
-    #     user_name = f"{user_name} {message.from_user.last_name}"
-    #
-    # if db.get_user_info(message.chat.id) is None:
-    #     bot.send_message(message.chat.id,
-    #                      f"Привет, {user_name}! 🥴🤙\nZ-Moves на связи 😎\n\n"
-    #                      f"Для работы со мной напиши мне название своей группы.\n\nПример: <b>IO-83</b>",
-    #                      parse_mode='HTML')
-    #     db.register_user(message.chat.id,
-    #                      message.from_user.username,
-    #                      stateworker.States.S_REGISTRATION.value,
-    #                      time.strftime('%d/%m/%y, %X'),
-    #                      time.strftime('%d/%m/%y, %X'))
-    #     print(db.get_user_info(message.chat.id))
-    #
-    # elif db.get_user_info(message.chat.id)[2] is None:
-    #     bot.send_message(message.chat.id,
-    #                      "Перестань тестировать меня. Введи группу плес")
-    #
-    #
-    # else:
-    #     bot.send_message(message.chat.id,
-    #                      "Главное меню",
-    #                      reply_markup=keyboard_generator.main_menu_keyboard)
-    #     db.set_state(message.from_user.username,
-    #                  stateworker.States.S_MAIN_MENU.value,
-    #                  time.strftime('%d/%m/%y, %X'),
-    #                  message.chat.id)
+    service.rozklad_api_work_checker()
+    user_name = message.from_user.first_name
+    if message.from_user.last_name:
+        user_name = f"{user_name} {message.from_user.last_name}"
+
+    if db.get_user_info(message.chat.id) is None:
+        bot.send_message(message.chat.id,
+                         f"Привет, {user_name}! 🥴🤙\nZ-Moves на связи 😎\n\n"
+                         f"Для работы со мной напиши мне название своей группы.\n\nПример: <b>IO-83</b>",
+                         parse_mode='HTML')
+        db.register_user(message.chat.id,
+                         message.from_user.username,
+                         stateworker.States.S_REGISTRATION.value,
+                         time.strftime('%d/%m/%y, %X'),
+                         time.strftime('%d/%m/%y, %X'))
+        print(db.get_user_info(message.chat.id))
+
+    elif db.get_user_info(message.chat.id)[2] is None:
+        bot.send_message(message.chat.id,
+                         "Перестань тестировать меня. Введи группу плес")
+
+
+    else:
+        bot.send_message(message.chat.id,
+                         "Главное меню",
+                         reply_markup=keyboard_generator.main_menu_keyboard)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_MAIN_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
 
 @bot.message_handler(func=lambda message: (db.get_state(message.chat.id).__class__ == tuple and
@@ -1287,4 +1293,11 @@ def settings_menu(message):
                      message.chat.id)
 
 
-bot.polling()
+while True:
+    try:
+        bot.infinity_polling()
+
+    except Exception as e:
+        print(e) # или просто print(e) если у вас логгера нет,
+        # или import traceback; traceback.print_exc() для печати полной инфы
+        time.sleep(15)

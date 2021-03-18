@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+#!/usr/bin/python3.8.5
 import requests
 from bs4 import BeautifulSoup
 

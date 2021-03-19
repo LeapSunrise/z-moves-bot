@@ -163,6 +163,7 @@ class Schedule:
 
         except requests.exceptions.ConnectionError:
             return 'lox2'
+
     @staticmethod
     def get_list_of_subjects(user_id, week, day):
         try:

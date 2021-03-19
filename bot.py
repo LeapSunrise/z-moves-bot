@@ -60,15 +60,6 @@ def black_list(message):
 
 @bot.message_handler(commands=['start', 'START'])
 def start_message(message):
-    user_name = message.from_user.first_name
-    if message.from_user.last_name:
-        user_name = f"{user_name} {message.from_user.last_name}"
-    bot.send_message(message.chat.id,
-                     f"Привет, {user_name} 🥴🤙\nZ-Moves на связи 😎\n\n"
-                     f"Для работы со мной напиши мне название своей группы.\n\nПример: <b>IO-83</b>",
-                     parse_mode='HTML')
-
-
     service.rozklad_api_work_checker()
     user_name = message.from_user.first_name
     if message.from_user.last_name:
@@ -1198,7 +1189,7 @@ def schedule_menu(message):
                          f"А теперь день",
                          reply_markup=keyboard_generator.week1_day_choose_keyboard)
         db.set_state(message.from_user.username,
-                     stateworker.States.S_SCHEDULE_WEEK_VIEW.value,
+                     stateworker.States.S_SCHEDULE_WEEK_VIEW_1.value,
                      time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
 
@@ -1207,15 +1198,15 @@ def schedule_menu(message):
                          f"А теперь день",
                          reply_markup=keyboard_generator.week2_day_choose_keyboard)
         db.set_state(message.from_user.username,
-                     stateworker.States.S_SCHEDULE_WEEK_VIEW.value,
+                     stateworker.States.S_SCHEDULE_WEEK_VIEW_2.value,
                      time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
                                           db.get_state(message.chat.id)[
-                                              0] == stateworker.States.S_SCHEDULE_WEEK_VIEW.value)
-def week_view(message):
+                                              0] == stateworker.States.S_SCHEDULE_WEEK_VIEW_1.value)
+def week_view_1(message):
     for i in range(0, 5):
         if message.text == week1_day_buttons[i]:
             bot.send_message(message.chat.id,
@@ -1224,18 +1215,7 @@ def week_view(message):
                              reply_markup=keyboard_generator.week1_day_choose_keyboard,
                              disable_web_page_preview=True)
             db.set_state(message.from_user.username,
-                         stateworker.States.S_SCHEDULE_WEEK_VIEW.value,
-                         time.strftime('%d/%m/%y, %X'),
-                         message.chat.id)
-
-        elif message.text == week2_day_buttons[i]:
-            bot.send_message(message.chat.id,
-                             Schedule.show_schedule(message.chat.id, 2, i + 1, week_days[i + 1]),
-                             parse_mode="HTML",
-                             reply_markup=keyboard_generator.week2_day_choose_keyboard,
-                             disable_web_page_preview=True)
-            db.set_state(message.from_user.username,
-                         stateworker.States.S_SCHEDULE_WEEK_VIEW.value,
+                         stateworker.States.S_SCHEDULE_WEEK_VIEW_1.value,
                          time.strftime('%d/%m/%y, %X'),
                          message.chat.id)
 
@@ -1248,6 +1228,31 @@ def week_view(message):
                      time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
 
+
+@bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
+                                          db.get_state(message.chat.id)[
+                                              0] == stateworker.States.S_SCHEDULE_WEEK_VIEW_2.value)
+def week_view_2(message):
+    for i in range(0, 5):
+        if message.text == week2_day_buttons[i]:
+            bot.send_message(message.chat.id,
+                             Schedule.show_schedule(message.chat.id, 2, i + 1, week_days[i + 1]),
+                             parse_mode="HTML",
+                             reply_markup=keyboard_generator.week2_day_choose_keyboard,
+                             disable_web_page_preview=True)
+            db.set_state(message.from_user.username,
+                         stateworker.States.S_SCHEDULE_WEEK_VIEW_2.value,
+                         time.strftime('%d/%m/%y, %X'),
+                         message.chat.id)
+
+    if message.text == back_button:
+        bot.send_message(message.chat.id,
+                         f"Возвращаемся...",
+                         reply_markup=keyboard_generator.schedule_menu_keyboard)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_SCHEDULE_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
 """#####################################################################################################################
                                                     SETTINGS MENU

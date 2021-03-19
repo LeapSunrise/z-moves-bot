@@ -4,4 +4,4 @@ syntax: glob
 __pycache__
 *.iml
 .idea
-venv/
+venv

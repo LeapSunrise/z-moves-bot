@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/python3.8.5
+
 from datetime import datetime, timedelta
 import src.config.config as config
 
@@ -232,5 +233,8 @@ def get_blocked_user(user_id):
         'SELECT * FROM blocked_users WHERE user_id = %s',
         (user_id,)
     )
-
-    return c.fetchone()
+    q = c.fetchone()
+    if q is None:
+        return 'False'
+    else:
+        return q

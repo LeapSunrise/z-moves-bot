@@ -5,8 +5,9 @@ import datetime
 import time
 import src.config.config as config
 from src.service.replies import *
+import random
 
-import telebot_calendar
+from telebot_calendar import Calendar, RUSSIAN_LANGUAGE
 from telebot.types import ReplyKeyboardRemove, CallbackQuery
 from telebot_calendar import CallbackData
 
@@ -17,6 +18,7 @@ from src.service.service import rozklad_api_work_checker as api_checker
 
 bot = telebot.TeleBot(config.BOT_TOKEN)
 
+calendar = Calendar(RUSSIAN_LANGUAGE)
 lorem_ipsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
 
 """#####################################################################################################################
@@ -27,64 +29,69 @@ lorem_ipsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do e
 @bot.message_handler(func=lambda message: api_checker() is False)
 def bad_request(message):
     bot.send_message(message.chat.id,
-                     f"Йоооой.. Что-то пошло не по плану..\n"
-                     f"Скорее всего API расписания КПИ наився и спыть 🤧\n"
-                     f"Как только я возобновлю работу, я сразу же уведомлю об этом в канале Z-Moves News",
-                     reply_markup=telebot.types.ForceReply(),
-                     )
-    bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAEB9bhgQ6DCUQz5y_Mh7uwdvVxAWMiosgACEQAD1gWXKgGow7AQ9URiHgQ',
-                     reply_markup=telebot.types.ForceReply())
+                     api_bad_request_reply[0],
+                     reply_markup=telebot.types.ReplyKeyboardRemove(),
+                     parse_mode='HTML')
+    bot.send_sticker(message.chat.id, api_bad_request_reply[random.randint(1, len(api_bad_request_reply)-1)],
+                     reply_markup=None)
 
 
-@bot.message_handler(func=lambda message: db.get_blocked_user(message.chat.id) is True and
-                                          message.chat.id in db.get_blocked_user(message.chat.id))
+@bot.message_handler(func=lambda message: message.chat.id == db.get_blocked_user(message.chat.id)[0])
 def black_list(message):
     user_name = message.from_user.first_name
+
     if message.from_user.last_name:
         user_name = f"{user_name} {message.from_user.last_name}"
+
     db.update_blocked_users(message.chat.id,
                             user_name,
                             time.strftime('%d/%m/%y, %X'),
                             time.strftime('%d/%m/%y, %X'))
     bot.send_sticker(message.chat.id,
-                     'CAACAgIAAxkBAAEB9bhgQ6DCUQz5y_Mh7uwdvVxAWMiosgACEQAD1gWXKgGow7AQ9URiHgQ')
+                     blocked_user_reply[1])
     bot.send_message(message.chat.id,
-                     'Сорян, но ты в ЧС 😢',
+                     blocked_user_reply[0],
                      reply_markup=telebot.types.ReplyKeyboardRemove())
 
 
 @bot.message_handler(commands=['start', 'START'])
 def start_message(message):
-    service.rozklad_api_work_checker()
     user_name = message.from_user.first_name
+
     if message.from_user.last_name:
         user_name = f"{user_name} {message.from_user.last_name}"
 
     if db.get_user_info(message.chat.id) is None:
         bot.send_message(message.chat.id,
-                         f"Привет, {user_name}! 🥴🤙\nZ-Moves на связи 😎\n\n"
-                         f"Для работы со мной напиши мне название своей группы.\n\nПример: <b>IO-83</b>",
+                         start_reply.format(user_name),
                          parse_mode='HTML')
         db.register_user(message.chat.id,
                          message.from_user.username,
                          stateworker.States.S_REGISTRATION.value,
                          time.strftime('%d/%m/%y, %X'),
                          time.strftime('%d/%m/%y, %X'))
-        print(db.get_user_info(message.chat.id))
 
-    elif db.get_user_info(message.chat.id)[2] is None:
+    if db.get_user_info(message.chat.id)[2] is None:
         bot.send_message(message.chat.id,
-                         "Перестань тестировать меня. Введи группу плес")
+                         repeated_start_reply,
+                         reply_markup=None,
+                         parse_mode='HTML')
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_REGISTRATION.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
 
 
     else:
         bot.send_message(message.chat.id,
-                         "Главное меню",
-                         reply_markup=keyboard_generator.main_menu_keyboard)
+                         registered_user_start_reply,
+                         reply_markup=keyboard_generator.main_menu_keyboard,
+                         parse_mode='HTML')
         db.set_state(message.from_user.username,
                      stateworker.States.S_MAIN_MENU.value,
                      time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
+
 
 
 @bot.message_handler(func=lambda message: (db.get_state(message.chat.id).__class__ == tuple and
@@ -95,7 +102,7 @@ def start_message(message):
 def group_registration(message):
     if Schedule.is_group_exist(message.text):
         bot.send_message(message.chat.id,
-                         f"Есть такая! Ну а теперь приступим 🙂",
+                         successful_registration,
                          reply_markup=keyboard_generator.main_menu_keyboard)
         db.register_user_group_name(message.from_user.username,
                                     message.text,
@@ -105,7 +112,7 @@ def group_registration(message):
 
     elif message.text == cancel_button:
         bot.send_message(message.chat.id,
-                         "Настройки",
+                         settings_reply,
                          reply_markup=keyboard_generator.settings_menu_keyboard)
         db.set_state(message.from_user.username,
                      stateworker.States.S_SETTINGS_MENU.value,
@@ -114,7 +121,7 @@ def group_registration(message):
 
     else:
         bot.send_message(message.chat.id,
-                         f"<b>{message.text}</b>? Что-то я о такой группе ещё не слышал 🤥",
+                         unsuccessful_registration.format(message.text),
                          parse_mode='HTML')
         db.set_state(message.from_user.username,
                      stateworker.States.S_REGISTRATION.value,
@@ -133,7 +140,7 @@ def main_menu(message):
     db.auto_remove_hotline()
     if message.text == schedule_button:
         bot.send_message(message.chat.id,
-                         f"Выбери опцию отображения расписания.",
+                         schedule_reply,
                          reply_markup=keyboard_generator.schedule_menu_keyboard)
         db.set_state(message.from_user.username,
                      stateworker.States.S_SCHEDULE_MENU.value,
@@ -142,7 +149,7 @@ def main_menu(message):
 
     elif message.text == settings_button:
         bot.send_message(message.chat.id,
-                         f"Что нужно настроить?",
+                         settings_reply,
                          reply_markup=keyboard_generator.settings_menu_keyboard)
         db.set_state(message.from_user.username,
                      stateworker.States.S_SETTINGS_MENU.value,
@@ -151,8 +158,7 @@ def main_menu(message):
 
     elif message.text == links_button:
         bot.send_message(message.chat.id,
-                         f"Здесь ты можешь добавлять ссылки к предметам, изменять и даже их удалять, "
-                         f"если они есть.",
+                         links_reply,
                          reply_markup=service.dynamic_menu_links_inline_keyboard_generator(message.chat.id))
         db.set_state(message.from_user.username,
                      stateworker.States.S_MAIN_MENU.value,
@@ -161,7 +167,7 @@ def main_menu(message):
 
     elif message.text == hotlines_button:
         bot.send_message(message.chat.id,
-                         f"Здесь ты можешь добавлять хотлайны (дедлайны - плохо) к предметам",
+                         hotlines_reply,
                          reply_markup=service.dynamic_menu_hotlines_inline_keyboard_generator(message.chat.id))
         db.set_state(message.from_user.username,
                      stateworker.States.S_MAIN_MENU.value,
@@ -196,17 +202,17 @@ def main_menu(message):
                      message.chat.id)
 
 
-user_links_dict = {}
-user_hotlines_dict = {}
+user_links_dict = {}  # links manager dictionary
+user_hotlines_dict = {}  # hotlines manager dictionary
 
 """#####################################################################################################################
                                                     MAIN MENU/LINKS MENU
 #####################################################################################################################"""
 
 calendar_1 = CallbackData("calendar_1", "action", "year", "month", "day")
-calendar_keyboard = telebot_calendar.create_calendar(name=calendar_1.prefix,
-                                                     year=datetime.datetime.now().year,
-                                                     month=datetime.datetime.now().month, )
+calendar_keyboard = calendar.create_calendar(name=calendar_1.prefix,
+                                             year=datetime.datetime.now().year,
+                                             month=datetime.datetime.now().month,)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith(calendar_1.prefix) == False)
@@ -588,16 +594,17 @@ def links_menu(call):
                                           disable_web_page_preview=True)
 
 
+
 @bot.callback_query_handler(func=lambda call: call.data.startswith(calendar_1.prefix))
 def input_hotline_date(call: CallbackQuery):
     name, action, year, month, day = call.data.split(calendar_1.sep)
-    date = telebot_calendar.calendar_query_handler(bot=bot,
-                                                   call=call,
-                                                   name=name,
-                                                   action=action,
-                                                   year=year,
-                                                   month=month,
-                                                   day=day)
+    date = calendar.calendar_query_handler(bot=bot,
+                                           call=call,
+                                           name=name,
+                                           action=action,
+                                           year=year,
+                                           month=month,
+                                           day=day)
 
     if action == "DAY":
         user_hotlines_dict[call.message.chat.id]['date'] = date.strftime('%d.%m')
@@ -1270,7 +1277,7 @@ def settings_menu(message):
 
     if message.text == cancel_button:
         bot.send_message(message.chat.id,
-                         f"Настройки",
+                         settings_reply,
                          reply_markup=keyboard_generator.settings_menu_keyboard)
         db.set_state(message.from_user.username,
                      stateworker.States.S_SETTINGS_MENU.value,

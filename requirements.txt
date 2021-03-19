@@ -9,5 +9,5 @@ psycopg2-pool==1.1
 pyTelegramBotAPI==3.7.6
 requests==2.25.1
 soupsieve==2.2
-telebot-calendar==1.1
+telebot-calendar==1.2
 urllib3==1.26.3

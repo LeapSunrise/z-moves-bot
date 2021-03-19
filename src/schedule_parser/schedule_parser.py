@@ -5,7 +5,7 @@ from bs4 import BeautifulSoup
 
 import src.database.db as db
 
-free = '''
+free_day = '''
 ░░▄█████████████████▄
 ░▐████▀▒▒БОЛДАК▒▒▀████
 ░███▀▒▒▒РАЗРЕШИЛ▒▒▒▒▀██
@@ -44,21 +44,6 @@ lesson_numbers = {
 subject_enumeration = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣']
 
 
-
-def get_links(user_id):
-    links = db.get_links(user_id)
-    links_text = ''
-    if len(links) == 0:
-        links_text = 'Вы еще не добавили ни одной ссылки.\nДля занесения ссылки перейдите в настройки ⚙'
-    else:
-        for l in links:
-            hl = '1️⃣️  <a href="{link}">{text}</a>\n'
-            links_text += hl.format(link=l[0], text=l[1])
-
-    return links_text
-
-
-
 def get_current_week():
     try:
         return requests.get('http://api.rozklad.org.ua/v2/weeks', timeout=3).json()['data']
@@ -93,12 +78,12 @@ class Subject:
         return self.lesson_title + '[' + self.lesson_type + "] - " + self.teacher_name + '\n'
 
 
-def show_exams(sch: str):
-    return '''Запланированные мувы на экзамены: 	
-———————————————	
-{schedule}	
-———————————————	
-'''.format(schedule=sch)
+# def show_exams(sch: str):
+#     return '''Запланированные мувы на экзамены:
+# ———————————————
+# {schedule}
+# ———————————————
+# '''.format(schedule=sch)
 
 
 class Schedule:
@@ -123,12 +108,10 @@ class Schedule:
             schedule_title = 'Запланированные мувы на ' + weekday + ':'
             schedule_body = ''
             hotlines_body = ''
+            sep = '_' * 35
 
             subject_links = db.get_links(user_id)
-            hotlines = db.get_hotlines(user_id)
-            print(subject_links)
-            print(hotlines)
-            les_dict = {}
+
             for lesson in data:
                 if lesson['lesson_week'] == str(week) and lesson['day_number'] == str(day):
                     lesson_start = lesson["time_start"][:5]
@@ -146,20 +129,16 @@ class Schedule:
 
                                 schedule_body += subject_link
 
+            hotlines = db.get_hotlines(user_id)
             if hotlines is not None:
-                print(hotlines)
+                hotlines_body += f"{sep}\n\n👺 Хотлайны:\n\n"
                 for i in hotlines:
-                    hotlines_body += f"{i[1]} - {i[2]} - {i[3]}\n"
-
-
-
+                    hotlines_body += f"{i[1]} - {i[2]} - {i[3]}"
 
             if schedule_body == '':
-                schedule_body = free
+                schedule_body = free_day
 
-            sep = '—' * 15
-
-            return f"{schedule_title}\n{sep}\n{schedule_body}\n{sep}\n👺 Хотлайны:\n\n{hotlines_body}\n{sep}"
+            return f"{schedule_title}\n{sep}\n{schedule_body}{hotlines_body}\n{sep}"
 
         except requests.exceptions.ConnectionError:
             return 'lox2'
@@ -198,36 +177,36 @@ class Schedule:
         except requests.exceptions.ConnectionError:
             return 'lox4'
 
-    @staticmethod
-    def get_session_for_schedule(user_id):
-        try:
-            user = db.get_user_info(user_id)[2]
-            url = 'http://api.rozklad.org.ua/v2/groups/{0}'
-            r = requests.get(url.format(user[0]), timeout=3)
-            data = r.json()['data']
-
-            group_token = data["group_url"][data["group_url"].index("g="):]
-            full_url = 'http://rozklad.kpi.ua/Schedules/ViewSessionSchedule.aspx?' + group_token
-
-            req = requests.get(full_url, timeout=3)
-
-            soup = BeautifulSoup(req.content, 'html.parser')
-
-            trs = []
-            rows = soup.find_all('tr')
-            schedule = ''
-            for row in rows:
-                trs.append(row.find_all('td'))
-
-            i = 0
-            for td in trs:
-                if td[1].getText():
-                    schedule += '\n⚠️<b>' + td[0].getText() + '</b>\n' + subject_enumeration[i] + ' '
-                    for link in td[1].find_all('a', href=True):
-                        schedule += '\n' + link.getText()
-                    schedule += ' : ' + td[1].getText()[-5:] + '\n'
-                    i += 1
-
-            return show_exams(schedule)
-        except requests.exceptions.ConnectionError:
-            return 'lox6'
+    # @staticmethod
+    # def get_session_for_schedule(user_id):
+    #     try:
+    #         user = db.get_user_info(user_id)[2]
+    #         url = 'http://api.rozklad.org.ua/v2/groups/{0}'
+    #         r = requests.get(url.format(user[0]), timeout=3)
+    #         data = r.json()['data']
+    #
+    #         group_token = data["group_url"][data["group_url"].index("g="):]
+    #         full_url = 'http://rozklad.kpi.ua/Schedules/ViewSessionSchedule.aspx?' + group_token
+    #
+    #         req = requests.get(full_url, timeout=3)
+    #
+    #         soup = BeautifulSoup(req.content, 'html.parser')
+    #
+    #         trs = []
+    #         rows = soup.find_all('tr')
+    #         schedule = ''
+    #         for row in rows:
+    #             trs.append(row.find_all('td'))
+    #
+    #         i = 0
+    #         for td in trs:
+    #             if td[1].getText():
+    #                 schedule += '\n⚠️<b>' + td[0].getText() + '</b>\n' + subject_enumeration[i] + ' '
+    #                 for link in td[1].find_all('a', href=True):
+    #                     schedule += '\n' + link.getText()
+    #                 schedule += ' : ' + td[1].getText()[-5:] + '\n'
+    #                 i += 1
+    #
+    #         return show_exams(schedule)
+    #     except requests.exceptions.ConnectionError:
+    #         return 'lox6'

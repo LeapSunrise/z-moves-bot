@@ -8,7 +8,7 @@ from src.service.replies import *
 import random
 
 from telebot_calendar import Calendar, RUSSIAN_LANGUAGE
-from telebot.types import ReplyKeyboardRemove, CallbackQuery
+
 from telebot_calendar import CallbackData
 
 from src.schedule_parser.schedule_parser import *
@@ -17,9 +17,11 @@ from src.service.buttons import *
 from src.service.service import rozklad_api_work_checker as api_checker
 
 bot = telebot.TeleBot(config.BOT_TOKEN)
-
 calendar = Calendar(RUSSIAN_LANGUAGE)
-lorem_ipsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.'
+calendar_1 = CallbackData("calendar_1", "action", "year", "month", "day")
+calendar_keyboard = calendar.create_calendar(name=calendar_1.prefix,
+                                             year=datetime.datetime.now().year,
+                                             month=datetime.datetime.now().month, )
 
 """#####################################################################################################################
                                                     START
@@ -32,7 +34,7 @@ def bad_request(message):
                      api_bad_request_reply[0],
                      reply_markup=telebot.types.ReplyKeyboardRemove(),
                      parse_mode='HTML')
-    bot.send_sticker(message.chat.id, api_bad_request_reply[random.randint(1, len(api_bad_request_reply)-1)],
+    bot.send_sticker(message.chat.id, api_bad_request_reply[random.randint(1, len(api_bad_request_reply) - 1)],
                      reply_markup=None)
 
 
@@ -93,12 +95,9 @@ def start_message(message):
                      message.chat.id)
 
 
-
 @bot.message_handler(func=lambda message: (db.get_state(message.chat.id).__class__ == tuple and
-                                           (db.get_state(message.chat.id)[
-                                                0] == stateworker.States.S_REGISTRATION.value or
-                                            db.get_state(message.chat.id)[
-                                                0] == stateworker.States.S_CHANGE_GROUP.value)))
+                     (db.get_state(message.chat.id)[0] == stateworker.States.S_REGISTRATION.value or
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_GROUP.value)))
 def group_registration(message):
     if Schedule.is_group_exist(message.text):
         bot.send_message(message.chat.id,
@@ -135,7 +134,7 @@ def group_registration(message):
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[0] == stateworker.States.S_MAIN_MENU.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_MAIN_MENU.value)
 def main_menu(message):
     db.auto_remove_hotline()
     if message.text == schedule_button:
@@ -209,13 +208,8 @@ user_hotlines_dict = {}  # hotlines manager dictionary
                                                     MAIN MENU/LINKS MENU
 #####################################################################################################################"""
 
-calendar_1 = CallbackData("calendar_1", "action", "year", "month", "day")
-calendar_keyboard = calendar.create_calendar(name=calendar_1.prefix,
-                                             year=datetime.datetime.now().year,
-                                             month=datetime.datetime.now().month,)
 
-
-@bot.callback_query_handler(func=lambda call: call.data.startswith(calendar_1.prefix) == False)
+@bot.callback_query_handler(func=lambda call: call.data.startswith(calendar_1.prefix) is False)
 def links_menu(call):
     inline_subject_keyboard_to_add_link = service.generate_inline_subjects_to_add_link(call.message.chat.id)
     inline_linked_subject_keyboard_to_ch = service.generate_inline_linked_subjects_to_change(call.message.chat.id)
@@ -594,9 +588,8 @@ def links_menu(call):
                                           disable_web_page_preview=True)
 
 
-
 @bot.callback_query_handler(func=lambda call: call.data.startswith(calendar_1.prefix))
-def input_hotline_date(call: CallbackQuery):
+def input_hotline_date(call: telebot.types.CallbackQuery):
     name, action, year, month, day = call.data.split(calendar_1.sep)
     date = calendar.calendar_query_handler(bot=bot,
                                            call=call,
@@ -612,7 +605,7 @@ def input_hotline_date(call: CallbackQuery):
                          text=f"Предмет: {user_hotlines_dict[call.message.chat.id]['subject']}\n"
                               f"Дата: {date.strftime('%d.%m')}\n\n"
                               f"Теперь добавь описание :)",
-                         reply_markup=ReplyKeyboardRemove())
+                         reply_markup=telebot.types.ReplyKeyboardRemove())
 
         if len(user_hotlines_dict[call.message.chat.id]) == 3:
             db.set_state(call.message.from_user.username,

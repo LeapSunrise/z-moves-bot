@@ -194,13 +194,13 @@ def auto_remove_hotline():
     print(dm)
 
     c.execute(
-        f'SELECT * FROM hotlines WHERE date = {dm}'
+        f'SELECT * FROM hotlines WHERE date <= {dm}'
     )
     q = c.fetchall()
 
     if len(q) != 0:
         c.execute(
-            f'DELETE FROM hotlines WHERE date = {dm}'
+            f'DELETE FROM hotlines WHERE date <= {dm}'
         )
         conn.commit()
 

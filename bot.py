@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/python3.8.5
 import datetime
-import os
 import time
 import src.config.config as config
 
@@ -12,6 +11,7 @@ from telebot_calendar import CallbackData
 from src.schedule_parser.schedule_parser import *
 from src.service import keyboard_generator, stateworker, service
 from src.service.buttons import *
+from src.service.service import rozklad_api_work_checker as api_checker
 
 bot = telebot.TeleBot(config.BOT_TOKEN)
 
@@ -22,23 +22,16 @@ lorem_ipsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do e
 #####################################################################################################################"""
 
 
-# @bot.message_handler(func=lambda message: rozklad_api_work_checker() is False)
-# def long_request(message):
-#
-#     bot.send_message(message.chat.id,
-#                      f"Йоооой.. Что-то пошло не по плану..\n"
-#                      f"Скорее всего API расписания КПИ наився и спыть 🤧\n"
-#                      f"Можешь позалипать пока на дино, а я попробую тебя уведомить, как только апишка встанет :(",
-#                      reply_markup=telebot.types.ForceReply(),
-#                      )
-#     bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAEB9bhgQ6DCUQz5y_Mh7uwdvVxAWMiosgACEQAD1gWXKgGow7AQ9URiHgQ', reply_markup=telebot.types.ForceReply())
-#
-#
-#
-# @bot.message_handler(func=lambda message: rozklad_api_work_checker() is True)
-# def good_request(message):
-#     bot.send_message(message.chat.id, 'УРРААА, АПИШКА ВСТАЛА ПИЗДЕЦ!',
-#                      reply_markup=keyboard_generator.main_menu_keyboard)
+@bot.message_handler(func=lambda message: api_checker() is False)
+def bad_request(message):
+    bot.send_message(message.chat.id,
+                     f"Йоооой.. Что-то пошло не по плану..\n"
+                     f"Скорее всего API расписания КПИ наився и спыть 🤧\n"
+                     f"Как только я возобновлю работу, я сразу же уведомлю об этом в канале Z-Moves News",
+                     reply_markup=telebot.types.ForceReply(),
+                     )
+    bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAEB9bhgQ6DCUQz5y_Mh7uwdvVxAWMiosgACEQAD1gWXKgGow7AQ9URiHgQ', reply_markup=telebot.types.ForceReply())
+
 
 
 @bot.message_handler(func=lambda message: db.get_blocked_user(message.chat.id) is not None and

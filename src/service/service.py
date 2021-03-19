@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
-#!/usr/bin/python3.8.5
+# !/usr/bin/python3.8.5
+
 from src.schedule_parser.schedule_parser import *
 from src.service.buttons import *
-
-not_available_reply = '⛔ В разработке'
 
 
 def dynamic_menu_links_inline_keyboard_generator(chat_id):
     """
-    Генерирует main_menu/links клавиатуру.
+    Generates dynamic main_menu/links inline keyboard.
+
     :param chat_id:
     :return:
     """
@@ -22,6 +22,7 @@ def dynamic_menu_links_inline_keyboard_generator(chat_id):
 
 def dynamic_menu_hotlines_inline_keyboard_generator(chat_id):
     """
+    Generates dynamic main_menu/hotlines inline keyboard.
 
     :param chat_id:
     :return:
@@ -35,6 +36,12 @@ def dynamic_menu_hotlines_inline_keyboard_generator(chat_id):
 
 
 def generate_inline_subjects_to_add_link(chat_id):
+    """
+    Generates subject inline keyboard to add links.
+
+    :param chat_id:
+    :return:
+    """
     list_subjects = tuple(Schedule.get_lessons(chat_id))
     keyboard = telebot.types.InlineKeyboardMarkup()
     for item in list_subjects:
@@ -58,7 +65,6 @@ def generate_inline_linked_subjects_to_change(chat_id):
     keyboard = telebot.types.InlineKeyboardMarkup()
     if db.get_links(chat_id) is not None:
         for item in db.get_links(chat_id):
-
             keyboard.add(telebot.types.InlineKeyboardButton(text=f"{item[2]} - {item[1]}",
                                                             callback_data=f"lch_{item[5]}"))
         keyboard.add(inline_first_back_button)
@@ -74,7 +80,6 @@ def generate_inline_hotlined_subjects_to_change(chat_id):
     if db.get_hotlines(chat_id) is not None:
 
         for item in db.get_hotlines(chat_id):
-
             keyboard.add(telebot.types.InlineKeyboardButton(text=f"{item[3]} - {item[1]}",
                                                             callback_data=f"hlch_{item[4]}"))
         keyboard.add(inline_first_back_button_hotlines)

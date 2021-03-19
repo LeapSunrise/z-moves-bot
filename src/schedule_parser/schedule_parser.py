@@ -165,17 +165,17 @@ class Schedule:
     def get_lessons(user_id):
         try:
             reply = []
-            user = db.get_user_info(user_id)[2]
+            user = db.get_user_info(user_id)[2]  # uid, uname, gname, state, factivity, lactivity
             url = Schedule.url_for_students_pattern
             r = requests.get(url.format(user), timeout=3)
             data = r.json()['data']
 
             for lesson in data:
-                reply.append(lesson["lesson_full_name"])
+                reply.append(lesson["lesson_name"])
 
             return set(reply)
         except requests.exceptions.ConnectionError:
-            return 'lox4'
+            return '.'
 
     # @staticmethod
     # def get_session_for_schedule(user_id):

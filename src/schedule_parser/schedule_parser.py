@@ -134,11 +134,12 @@ class Schedule:
                 hotlines_body += f"{sep}\n\n👺 Хотлайны:\n\n"
                 for i in hotlines:
                     hotlines_body += f"{i[1]} - {i[2]} - {i[3]}"
+                hotlines_body += '\n'
 
             if schedule_body == '':
                 schedule_body = free_day
 
-            return f"{schedule_title}\n{sep}\n{schedule_body}{hotlines_body}\n{sep}"
+            return f"{schedule_title}\n{sep}\n{schedule_body}{hotlines_body}{sep}"
 
         except requests.exceptions.ConnectionError:
             return 'lox2'

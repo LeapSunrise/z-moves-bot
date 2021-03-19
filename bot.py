@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
-#!/usr/bin/python3.8.5
+# !/usr/bin/python3.8.5
+
 import datetime
 import time
 import src.config.config as config
+from src.service.replies import *
 
 import telebot_calendar
 from telebot.types import ReplyKeyboardRemove, CallbackQuery
@@ -30,11 +32,11 @@ def bad_request(message):
                      f"Как только я возобновлю работу, я сразу же уведомлю об этом в канале Z-Moves News",
                      reply_markup=telebot.types.ForceReply(),
                      )
-    bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAEB9bhgQ6DCUQz5y_Mh7uwdvVxAWMiosgACEQAD1gWXKgGow7AQ9URiHgQ', reply_markup=telebot.types.ForceReply())
+    bot.send_sticker(message.chat.id, 'CAACAgIAAxkBAAEB9bhgQ6DCUQz5y_Mh7uwdvVxAWMiosgACEQAD1gWXKgGow7AQ9URiHgQ',
+                     reply_markup=telebot.types.ForceReply())
 
 
-
-@bot.message_handler(func=lambda message: db.get_blocked_user(message.chat.id) is not None and
+@bot.message_handler(func=lambda message: db.get_blocked_user(message.chat.id) is True and
                                           message.chat.id in db.get_blocked_user(message.chat.id))
 def black_list(message):
     user_name = message.from_user.first_name
@@ -168,31 +170,15 @@ def main_menu(message):
 
     elif message.text == mails_button:
         bot.reply_to(message,
-                     service.not_available_reply)
+                     not_available_reply)
         db.set_state(message.from_user.username,
                      stateworker.States.S_MAIN_MENU.value,
                      time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
 
     elif message.text == info_button:
-        info_button_reply = f"Ты залогинен под группой: <b>{db.get_user_info(message.chat.id)[2]}</b>\n\n" \
-                            f"Обо мне:\n\n" \
-                            f"Я — <b>Z-Moves</b>, единственный наследник ЗМ, истинный владыка семи королевств и ... \n" \
-                            f"Впрочем, это уже совсем другая история.\n\n" \
-                            f"Я обычный бот, показывающий расписание — скажут хейтеры. Но как бы не так. " \
-                            f"Со мной ты можешь:\n\n" \
-                            f"1. Прикреплять ссылки 🔗 к парам, которые порой так сложно и долго искать.\n" \
-                            f"2. 👺 Хотлайны. Ты всегда сможешь в сию минуту узнать до какого числа нужно сдать вторую " \
-                            f"лабу по Взлому Жопы 🧑‍💻\n" \
-                            f"3. Такого интерфейса ты ещё не видел 😎\n" \
-                            f"4. И это только начало 🤯 Я постепенно развиваюсь и добавляю в себя новые фичи, которые " \
-                            f"будут радовать тебя всё больше и больше 🤓\n" \
-                            f"5. Хватит читать! Давай бегом ссылки добавлять 🥴\n\n" \
-                            f"Да, и чуть не забыл. <a href='https://send.monobank.ua/jar/9RyLwakdWd'>Тут</a> можно " \
-                            f"сказать мне спасибо.\n👉👈" \
-
         bot.send_message(message.chat.id,
-                         info_button_reply,
+                         info_button_reply.format(db.get_user_info(message.chat.id)[2]),
                          reply_markup=keyboard_generator.main_menu_keyboard,
                          parse_mode='HTML',
                          disable_web_page_preview=True)
@@ -203,7 +189,7 @@ def main_menu(message):
 
     elif message.text == help_button:
         bot.reply_to(message,
-                     service.not_available_reply)
+                     not_available_reply)
         db.set_state(message.from_user.username,
                      stateworker.States.S_MAIN_MENU.value,
                      time.strftime('%d/%m/%y, %X'),
@@ -1247,6 +1233,7 @@ def week_view_2(message):
                      time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
 
+
 """#####################################################################################################################
                                                     SETTINGS MENU
 #####################################################################################################################"""
@@ -1266,7 +1253,7 @@ def settings_menu(message):
 
     if message.text == notifications_button:
         bot.reply_to(message,
-                     service.not_available_reply)
+                     not_available_reply)
         db.set_state(message.from_user.username,
                      stateworker.States.S_SETTINGS_MENU.value,
                      time.strftime('%d/%m/%y, %X'),

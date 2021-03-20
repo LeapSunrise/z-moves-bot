@@ -591,7 +591,7 @@ def input_hotline_date(call: telebot.types.CallbackQuery):
                          text=f"Предмет: {user_hotlines_dict[call.message.chat.id]['subject']}\n"
                               f"Дата: {date.strftime('%d.%m')}\n\n"
                               f"Теперь добавь описание :)",
-                         reply_markup=telebot.types.ReplyKeyboardRemove())
+                         reply_markup=keyboard_generator.generate_default_keyboard(cancel_button))
 
         if len(user_hotlines_dict[call.message.chat.id]) == 3:
             db.set_state(call.message.from_user.username,
@@ -665,7 +665,7 @@ def change_hotline(message):
                      time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
 
-    if message.text == confirm_button:
+    elif message.text == confirm_button:
         bot.send_message(message.chat.id,
                          f"Хотлайн для <b>'{user_hotlines_dict[message.chat.id]['subject']}' </b>"
                          f"успешно изменён.",

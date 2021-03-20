@@ -94,10 +94,9 @@ def start_message(message):
 
 
 @bot.message_handler(func=lambda message: (db.get_state(message.chat.id).__class__ == tuple and
-                                           (db.get_state(message.chat.id)[
-                                                0] == stateworker.States.S_REGISTRATION.value or
-                                            db.get_state(message.chat.id)[
-                                                0] == stateworker.States.S_CHANGE_GROUP.value)) and message.text.startswith("#") is False)
+                     (db.get_state(message.chat.id)[0] == stateworker.States.S_REGISTRATION.value or
+                      db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_GROUP.value)) and
+                     message.text.startswith("#") is False)
 def group_registration(message):
     if Schedule.is_group_exist(message.text):
         bot.send_message(message.chat.id,
@@ -212,7 +211,6 @@ user_hotlines_dict = {}  # hotlines manager dictionary
 @bot.callback_query_handler(func=lambda call: call.data in ['add_link', 'change_link', 'remove_link',
                                                             'links_first_back_button', 'links_second_back_button'])
 def links_menu(call):
-
     if call.data == 'add_link' or call.data == 'links_second_back_button':
         bot.edit_message_text(add_link_reply,
                               chat_id=call.message.chat.id,
@@ -303,7 +301,8 @@ def links_menu_change_link(call):
     inline_linked_subject_keyboard_to_ch = service.generate_inline_linked_subjects_to_change(call.message.chat.id)
 
     for buttons in inline_linked_subject_keyboard_to_ch.to_dict()['inline_keyboard'][
-                   :len(inline_linked_subject_keyboard_to_ch.to_dict()['inline_keyboard']) - 1]:  # -1 чтобы не ловилась бэк-кнопка
+                   :len(inline_linked_subject_keyboard_to_ch.to_dict()[
+                            'inline_keyboard']) - 1]:  # -1 чтобы не ловилась бэк-кнопка
         for button in buttons:
 
             if button['callback_data'] == call.data:
@@ -405,7 +404,6 @@ def links_menu_remove_link(call):
 
 @bot.callback_query_handler(func=lambda call: call.data in ['confirm_remove_link', 'cancel_remove_link'])
 def links_menu_confirm_cancel_remove_link(call):
-
     if call.data == 'confirm_remove_link':
         bot.delete_message(chat_id=call.message.chat.id,
                            message_id=call.message.message_id)
@@ -439,7 +437,6 @@ def links_menu_confirm_cancel_remove_link(call):
 @bot.callback_query_handler(func=lambda call: call.data in ['add_hotline', 'change_hotline', 'remove_hotline',
                                                             'hotlines_first_back_button'])
 def hotlines_menu(call):
-
     if call.data == 'add_hotline':
         bot.edit_message_text(add_hotline_reply,
                               chat_id=call.message.chat.id,
@@ -465,7 +462,8 @@ def hotlines_menu(call):
         bot.edit_message_text(hotlines_reply,
                               chat_id=call.message.chat.id,
                               message_id=call.message.message_id,
-                              reply_markup=service.dynamic_menu_hotlines_inline_keyboard_generator(call.message.chat.id),
+                              reply_markup=service.dynamic_menu_hotlines_inline_keyboard_generator(
+                                  call.message.chat.id),
                               parse_mode='HTML')
 
 
@@ -898,7 +896,7 @@ def input_password(message):
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_LINK.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_LINK.value)
 def change_link(message):
     if message.text == cancel_button:
         bot.send_message(message.chat.id,
@@ -1109,16 +1107,12 @@ def change_password(message):
 
 
 """#####################################################################################################################
-                                                    MAIN MENU/HOTLINES MENU
-#####################################################################################################################"""
-
-"""#####################################################################################################################
                                                     SCHEDULE MENU
 #####################################################################################################################"""
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[0] == stateworker.States.S_SCHEDULE_MENU.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_SCHEDULE_MENU.value)
 def schedule_menu(message):
     if message.text == back_button:
         bot.send_message(message.chat.id,
@@ -1171,8 +1165,7 @@ def schedule_menu(message):
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[
-                                              0] == stateworker.States.S_SCHEDULE_WEEK_VIEW_1.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_SCHEDULE_WEEK_VIEW_1.value)
 def week_view_1(message):
     for i in range(0, 5):
         if message.text == week1_day_buttons[i]:
@@ -1197,8 +1190,7 @@ def week_view_1(message):
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[
-                                              0] == stateworker.States.S_SCHEDULE_WEEK_VIEW_2.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_SCHEDULE_WEEK_VIEW_2.value)
 def week_view_2(message):
     for i in range(0, 5):
         if message.text == week2_day_buttons[i]:
@@ -1228,7 +1220,7 @@ def week_view_2(message):
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[0] == stateworker.States.S_SETTINGS_MENU.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_SETTINGS_MENU.value)
 def settings_menu(message):
     if message.text == back_button:
         bot.send_message(message.chat.id,

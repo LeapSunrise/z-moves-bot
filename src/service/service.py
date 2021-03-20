@@ -12,9 +12,10 @@ def dynamic_menu_links_inline_keyboard_generator(chat_id):
     :param chat_id:
     :return:
     """
+    user_group = db.get_user_info(chat_id)[2]
     keyboard = telebot.types.InlineKeyboardMarkup()
     keyboard.add(inline_add_link_button)
-    if db.get_links(chat_id) is not None:
+    if db.get_links(chat_id, user_group) is not None:
         keyboard.add(inline_change_link_button)
         keyboard.add(inline_remove_link_button)
     return keyboard

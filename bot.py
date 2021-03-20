@@ -723,6 +723,7 @@ def input_link(message):
                     user_links_dict[message.chat.id]['subject_type'],
                     user_links_dict[message.chat.id]['link'],
                     user_links_dict[message.chat.id]['password'],
+                    db.get_user_info(message.chat.id)[2],
                     user_links_dict[message.chat.id]['addition_time'])
         db.set_state(message.from_user.username,
                      stateworker.States.S_MAIN_MENU.value,

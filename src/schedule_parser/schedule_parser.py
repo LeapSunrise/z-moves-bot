@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/python3.8.5
 import requests
-
 import src.database.db as db
-
+import datetime
 free_day = '''
 ░░▄█████████████████▄
 ░▐████▀▒▒БОЛДАК▒▒▀████
@@ -45,11 +44,12 @@ subject_enumeration = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣']
 
 def get_current_week():
     try:
-        return requests.get('http://api.rozklad.org.ua/v2/weeks', timeout=3).json()['data']
+        if datetime.date.today().weekday() + 1 == 7:
+            return requests.get('http://api.rozklad.org.ua/v2/weeks', timeout=3).json()['data'] + 1
+        else:
+            return requests.get('http://api.rozklad.org.ua/v2/weeks', timeout=3).json()['data']
     except requests.exceptions.ConnectionError:
         return 'prosto privet. prosto kak dela...'
-
-
 
 
 def show_day(user_id: int, wd: str, day: int):
@@ -99,9 +99,9 @@ class Schedule:
     @staticmethod
     def show_schedule(user_id, week, day, weekday):
         try:
-            user = db.get_user_info(user_id)[2]
+            user_group = db.get_user_info(user_id)[2]
             url = Schedule.url_for_students_pattern
-            r = requests.get(url.format(user), timeout=3)
+            r = requests.get(url.format(user_group), timeout=3)
             data = r.json()['data']
 
             schedule_title = 'Запланированные мувы на ' + weekday + ':'
@@ -109,7 +109,7 @@ class Schedule:
             hotlines_body = ''
             sep = '_' * 35
 
-            subject_links = db.get_links(user_id)
+            subject_links = db.get_links(user_id, user_group)
 
             for lesson in data:
                 if lesson['lesson_week'] == str(week) and lesson['day_number'] == str(day):

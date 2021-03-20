@@ -76,33 +76,34 @@ def get_user_info(uid):
     return c.fetchone()
 
 
-def add_link(user_id, subject, subject_type, link, password, addition_time):
+def add_link(user_id, subject, subject_type, link, password, group_binding, addition_time):
     conn = get_connection()
     c = conn.cursor()
     c.execute(
-        'INSERT INTO links (user_id, subject, subject_type, link, password, addition_date) '
-        'VALUES (%s, %s, %s, %s, %s, %s)',
-        (user_id, subject, subject_type, link, password, addition_time,)
+        'INSERT INTO links (user_id, subject, subject_type, link, password, group_binding, addition_date) '
+        'VALUES (%s, %s, %s, %s, %s, %s, %s)',
+        (user_id, subject, subject_type, link, password, group_binding, addition_time,)
     )
     conn.commit()
 
 
-def add_hotline(user_id, subject, description, date, addition_date):
+def add_hotline(user_id, subject, description, date, group_binding, addition_date):
     conn = get_connection()
     c = conn.cursor()
     c.execute(
-        'INSERT INTO hotlines (user_id, subject, description, date, addition_date)'
+        'INSERT INTO hotlines (user_id, subject, description, date, group_binding, addition_date)'
         'VALUES (%s, %s, %s, %s, %s)',
-        (user_id, subject, description, date, addition_date)
+        (user_id, subject, description, date, group_binding, addition_date)
     )
     conn.commit()
 
 
-def get_links(uid):
+def get_links(user_id, group_binding):
     conn = get_connection()
     c = conn.cursor()
     c.execute(
-        'SELECT * FROM links WHERE user_id = %s', (uid,)
+        'SELECT * FROM links WHERE user_id = %s and group_binding = %s',
+        (user_id, group_binding,)
     )
     q = c.fetchall()
     if len(q) == 0:

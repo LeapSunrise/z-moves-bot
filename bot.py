@@ -97,7 +97,7 @@ def start_message(message):
                                            (db.get_state(message.chat.id)[
                                                 0] == stateworker.States.S_REGISTRATION.value or
                                             db.get_state(message.chat.id)[
-                                                0] == stateworker.States.S_CHANGE_GROUP.value)))
+                                                0] == stateworker.States.S_CHANGE_GROUP.value)) and message.text.startswith("#") is False)
 def group_registration(message):
     if Schedule.is_group_exist(message.text):
         bot.send_message(message.chat.id,

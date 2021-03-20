@@ -439,12 +439,6 @@ def links_menu_confirm_cancel_remove_link(call):
 @bot.callback_query_handler(func=lambda call: call.data in ['add_hotline', 'change_hotline', 'remove_hotline',
                                                             'hotlines_first_back_button'])
 def hotlines_menu(call):
-    inline_subject_keyboard_to_add_hotline = service.generate_inline_subjects_to_add_hotline(call.message.chat.id)
-    inline_hotlined_subject_keyboard_to_ch = service.generate_inline_hotlined_subjects_to_change(call.message.chat.id)
-    inline_hotlined_subject_keyboard_to_rm = service.generate_inline_hotlined_subjects_to_remove(call.message.chat.id)
-
-    inline_confirm_cancel_keyboard_hl = telebot.types.InlineKeyboardMarkup()
-    inline_confirm_cancel_keyboard_hl.add(inline_remove_hotline_cancel_button, inline_remove_hotline_confirm_button)
 
     if call.data == 'add_hotline':
         bot.edit_message_text(add_hotline_reply,
@@ -621,7 +615,7 @@ def input_hotline_date(call: telebot.types.CallbackQuery):
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[0] == stateworker.States.S_INPUT_HOTLINE.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_INPUT_HOTLINE.value)
 def input_hotline(message):
     if message.text == cancel_button:
         bot.send_message(message.chat.id,
@@ -662,7 +656,7 @@ def input_hotline(message):
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_HOTLINE.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_HOTLINE.value)
 def change_hotline(message):
     if message.text == cancel_button:
         bot.send_message(message.chat.id,
@@ -707,7 +701,7 @@ def change_hotline(message):
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[0] == stateworker.States.S_INPUT_LINK.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_INPUT_LINK.value)
 def input_link(message):
     if message.text == cancel_button:
         bot.send_message(message.chat.id,

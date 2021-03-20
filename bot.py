@@ -2,18 +2,16 @@
 # !/usr/bin/python3.8.5
 
 import datetime
-import time
-import src.config.config as config
-from src.service.replies import *
 import random
+import time
 
-from telebot_calendar import Calendar, RUSSIAN_LANGUAGE
+from telebot_calendar import Calendar, CallbackData, RUSSIAN_LANGUAGE
 
-from telebot_calendar import CallbackData
-
+import src.config.config as config
 from src.schedule_parser.schedule_parser import *
 from src.service import keyboard_generator, stateworker, service
 from src.service.buttons import *
+from src.service.replies import *
 from src.service.service import rozklad_api_work_checker as api_checker
 
 bot = telebot.TeleBot(config.BOT_TOKEN)
@@ -136,7 +134,7 @@ def group_registration(message):
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[0] == stateworker.States.S_MAIN_MENU.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_MAIN_MENU.value)
 def main_menu(message):
     db.auto_remove_hotline()
     if message.text == schedule_button:
@@ -211,152 +209,6 @@ user_hotlines_dict = {}  # hotlines manager dictionary
 #####################################################################################################################"""
 
 
-@bot.callback_query_handler(func=lambda call: 'hotline' in call.data)
-def hotlines_menu(call):
-    inline_subject_keyboard_to_add_hotline = service.generate_inline_subjects_to_add_hotline(call.message.chat.id)
-    inline_hotlined_subject_keyboard_to_ch = service.generate_inline_hotlined_subjects_to_change(call.message.chat.id)
-    inline_hotlined_subject_keyboard_to_rm = service.generate_inline_hotlined_subjects_to_remove(call.message.chat.id)
-
-    inline_confirm_cancel_keyboard_hl = telebot.types.InlineKeyboardMarkup()
-    inline_confirm_cancel_keyboard_hl.add(inline_remove_hotline_cancel_button, inline_remove_hotline_confirm_button)
-
-    if call.data == 'add_hotline':
-        bot.edit_message_text(add_hotline_reply,
-                              chat_id=call.message.chat.id,
-                              message_id=call.message.message_id,
-                              reply_markup=inline_subject_keyboard_to_add_hotline,
-                              parse_mode='HTML')
-
-    if call.data == 'change_hotline':
-        bot.edit_message_text(change_hotline_reply,
-                              chat_id=call.message.chat.id,
-                              message_id=call.message.message_id,
-                              reply_markup=inline_hotlined_subject_keyboard_to_ch,
-                              parse_mode='HTML')
-
-    if call.data == 'remove_hotline':
-        bot.edit_message_text(remove_hotline_reply,
-                              chat_id=call.message.chat.id,
-                              message_id=call.message.message_id,
-                              reply_markup=inline_hotlined_subject_keyboard_to_rm,
-                              parse_mode='HTML')
-
-    if call.data == 'hotlines_first_back_button':
-        bot.edit_message_text(hotlines_reply,
-                              chat_id=call.message.chat.id,
-                              message_id=call.message.message_id,
-                              reply_markup=service.dynamic_menu_hotlines_inline_keyboard_generator(
-                                  call.message.chat.id),
-                              parse_mode='HTML')
-
-    if call.data == 'confirm_remove_hotline':
-        bot.delete_message(chat_id=call.message.chat.id,
-                           message_id=call.message.message_id)
-        db.remove_hotline(call.message.chat.id,
-                          user_hotlines_dict[call.message.chat.id]['subject'],
-                          user_hotlines_dict[call.message.chat.id]['description'],
-                          user_hotlines_dict[call.message.chat.id]['date'],
-                          user_hotlines_dict[call.message.chat.id]['addition_date'])
-
-        bot.send_message(call.message.chat.id,
-                         confirm_remove_hotline_reply.format(user_hotlines_dict[call.message.chat.id]['subject']))
-
-    if call.data == 'cancel_remove_hotline':
-        bot.edit_message_text(remove_hotline_reply,
-                              chat_id=call.message.chat.id,
-                              message_id=call.message.message_id,
-                              reply_markup=inline_hotlined_subject_keyboard_to_rm,
-                              parse_mode='HTML')
-
-    if inline_subject_keyboard_to_add_hotline != '' and call.data in [button['callback_data'] for buttons in
-                                                                      inline_subject_keyboard_to_add_hotline.to_dict()[
-                                                                          'inline_keyboard'] for button in buttons]:
-        for buttons in inline_subject_keyboard_to_add_hotline.to_dict()['inline_keyboard'][
-                       :len(inline_subject_keyboard_to_add_hotline.to_dict()['inline_keyboard']) - 1]:
-            for button in buttons:
-                if button['callback_data'] == call.data:
-                    user_hotlines_dict.update({call.message.chat.id: {
-                        'subject': button['text'],
-                        'description': '',
-                        'date': '',
-                    }})
-                    bot.edit_message_text(f"Предмет: <b>{user_hotlines_dict[call.message.chat.id]['subject']}</b>\n\n"
-                                          f"Выбери дату для хотлайна",
-                                          chat_id=call.message.chat.id,
-                                          message_id=call.message.message_id,
-                                          reply_markup=calendar_keyboard,
-                                          parse_mode='HTML')
-
-    if inline_hotlined_subject_keyboard_to_ch != '' and \
-            call.data in [button['callback_data'] for buttons in
-                          inline_hotlined_subject_keyboard_to_ch.to_dict()['inline_keyboard'] for button in buttons]:
-
-        for buttons in inline_hotlined_subject_keyboard_to_ch.to_dict()['inline_keyboard'][
-                       :len(inline_hotlined_subject_keyboard_to_ch.to_dict()['inline_keyboard']) - 1]:
-            for button in buttons:
-                if button['callback_data'] == call.data:
-                    user_hotlines_dict.update({call.message.chat.id: {
-                        'subject': button['text'][button['text'].find('-') + 2:],
-                        'description': '',
-                        'date': '',
-                        'addition_date': button['callback_data'][button['callback_data'].find('_') + 1:]
-                    }})
-
-                    user_hotlines_dict[call.message.chat.id]['description'] = \
-                        db.get_hotlines_to_change(call.message.chat.id,
-                                                  user_hotlines_dict[call.message.chat.id]['subject'],
-                                                  user_hotlines_dict[call.message.chat.id]['addition_date'])[0]
-                    user_hotlines_dict[call.message.chat.id]['date'] = db.get_hotlines_to_change(call.message.chat.id,
-                                                                                                 user_hotlines_dict[
-                                                                                                     call.message.chat.id][
-                                                                                                     'subject'],
-                                                                                                 user_hotlines_dict[
-                                                                                                     call.message.chat.id][
-                                                                                                     'addition_date'])[
-                        1]
-                    bot.edit_message_text(f"Выбери новую дату для хотлайна",
-                                          chat_id=call.message.chat.id,
-                                          message_id=call.message.message_id,
-                                          reply_markup=calendar_keyboard,
-                                          parse_mode='HTML',
-                                          disable_web_page_preview=True)
-
-    if inline_hotlined_subject_keyboard_to_rm != '' and call.data in [button['callback_data'] for buttons in
-                                                                      inline_hotlined_subject_keyboard_to_rm.to_dict()[
-                                                                          'inline_keyboard'][:len(
-                                                                          inline_hotlined_subject_keyboard_to_rm.to_dict()[
-                                                                              'inline_keyboard']) - 1] for button in
-                                                                      buttons]:
-        for buttons in inline_hotlined_subject_keyboard_to_rm.to_dict()['inline_keyboard'][
-                       :len(inline_hotlined_subject_keyboard_to_rm.to_dict()['inline_keyboard']) - 1]:
-            for button in buttons:
-                if button['callback_data'] == call.data:
-                    user_hotlines_dict.update({call.message.chat.id: {
-                        'subject': button['text'][button['text'].find('-') + 2:],
-                        'description': '',
-                        'date': '',
-                        'addition_date': button['callback_data'][button['callback_data'].find('_') + 1:]
-                    }})
-
-                    user_hotlines_dict[call.message.chat.id]['description'] = \
-                        db.get_hotlines_to_change(call.message.chat.id,
-                                                  user_hotlines_dict[call.message.chat.id]['subject'],
-                                                  user_hotlines_dict[call.message.chat.id]['addition_date'])[0]
-
-                    user_hotlines_dict[call.message.chat.id]['date'] = \
-                        db.get_hotlines_to_change(call.message.chat.id,
-                                                  user_hotlines_dict[call.message.chat.id]['subject'],
-                                                  user_hotlines_dict[call.message.chat.id]['addition_date'])[1]
-
-                    bot.edit_message_text(f"Ты удаляешь хотлайн:\n\n"
-                                          f"{lorem_ipsum}",
-                                          chat_id=call.message.chat.id,
-                                          message_id=call.message.message_id,
-                                          reply_markup=inline_confirm_cancel_keyboard_hl,
-                                          parse_mode='HTML',
-                                          disable_web_page_preview=True)
-
-
 @bot.callback_query_handler(func=lambda call: call.data in ['add_link', 'change_link', 'remove_link',
                                                             'links_first_back_button', 'links_second_back_button'])
 def links_menu(call):
@@ -403,7 +255,6 @@ def links_menu_add_link_subject(call):
                          'inline_keyboard']) - 1]:  # тут -1 чтобы не ловилась бэк-кнопка
 
             for button in buttons:
-                print(inline_subject_keyboard_to_add_link.to_dict()['inline_keyboard'])
 
                 if button['callback_data'] == call.data:
                     user_links_dict.update({call.message.chat.id: {
@@ -553,7 +404,7 @@ def links_menu_remove_link(call):
 
 
 @bot.callback_query_handler(func=lambda call: call.data in ['confirm_remove_link', 'cancel_remove_link'])
-def links_menu_confirm_remove_link(call):
+def links_menu_confirm_cancel_remove_link(call):
 
     if call.data == 'confirm_remove_link':
         bot.delete_message(chat_id=call.message.chat.id,
@@ -577,6 +428,157 @@ def links_menu_confirm_remove_link(call):
                               chat_id=call.message.chat.id,
                               message_id=call.message.message_id,
                               reply_markup=service.generate_inline_linked_subjects_to_remove(call.message.chat.id),
+                              parse_mode='HTML')
+
+
+"""#####################################################################################################################
+                                                    MAIN MENU/HOTLINE MENU
+#####################################################################################################################"""
+
+
+@bot.callback_query_handler(func=lambda call: call.data in ['add_hotline', 'change_hotline', 'remove_hotline',
+                                                            'hotlines_first_back_button'])
+def hotlines_menu(call):
+    inline_subject_keyboard_to_add_hotline = service.generate_inline_subjects_to_add_hotline(call.message.chat.id)
+    inline_hotlined_subject_keyboard_to_ch = service.generate_inline_hotlined_subjects_to_change(call.message.chat.id)
+    inline_hotlined_subject_keyboard_to_rm = service.generate_inline_hotlined_subjects_to_remove(call.message.chat.id)
+
+    inline_confirm_cancel_keyboard_hl = telebot.types.InlineKeyboardMarkup()
+    inline_confirm_cancel_keyboard_hl.add(inline_remove_hotline_cancel_button, inline_remove_hotline_confirm_button)
+
+    if call.data == 'add_hotline':
+        bot.edit_message_text(add_hotline_reply,
+                              chat_id=call.message.chat.id,
+                              message_id=call.message.message_id,
+                              reply_markup=service.generate_inline_subjects_to_add_hotline(call.message.chat.id),
+                              parse_mode='HTML')
+
+    if call.data == 'change_hotline':
+        bot.edit_message_text(change_hotline_reply,
+                              chat_id=call.message.chat.id,
+                              message_id=call.message.message_id,
+                              reply_markup=service.generate_inline_hotlined_subjects_to_change(call.message.chat.id),
+                              parse_mode='HTML')
+
+    if call.data == 'remove_hotline':
+        bot.edit_message_text(remove_hotline_reply,
+                              chat_id=call.message.chat.id,
+                              message_id=call.message.message_id,
+                              reply_markup=service.generate_inline_hotlined_subjects_to_remove(call.message.chat.id),
+                              parse_mode='HTML')
+
+    if call.data == 'hotlines_first_back_button':
+        bot.edit_message_text(hotlines_reply,
+                              chat_id=call.message.chat.id,
+                              message_id=call.message.message_id,
+                              reply_markup=service.dynamic_menu_hotlines_inline_keyboard_generator(call.message.chat.id),
+                              parse_mode='HTML')
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('hotline_add_'))
+def hotlines_menu_add_hotline(call):
+    inline_subject_keyboard_to_add_hotline = service.generate_inline_subjects_to_add_hotline(call.message.chat.id)
+
+    if inline_subject_keyboard_to_add_hotline != '' and call.data in \
+            [button['callback_data'] for buttons in
+             inline_subject_keyboard_to_add_hotline.to_dict()['inline_keyboard'] for button in buttons]:
+        for buttons in inline_subject_keyboard_to_add_hotline.to_dict()['inline_keyboard'][
+                       :len(inline_subject_keyboard_to_add_hotline.to_dict()['inline_keyboard']) - 1]:
+            for button in buttons:
+                if button['callback_data'] == call.data:
+                    user_hotlines_dict.update({call.message.chat.id: {
+                        'subject': button['text'],
+                        'description': '',
+                        'date': '',
+                    }})
+                    bot.edit_message_text(f"Предмет: <b>{user_hotlines_dict[call.message.chat.id]['subject']}</b>\n\n"
+                                          f"Выбери дату для хотлайна",
+                                          chat_id=call.message.chat.id,
+                                          message_id=call.message.message_id,
+                                          reply_markup=calendar_keyboard,
+                                          parse_mode='HTML')
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('hotline_ch_'))
+def hotlines_menu_change_hotline(call):
+    inline_hotlined_subject_keyboard_to_ch = service.generate_inline_hotlined_subjects_to_change(call.message.chat.id)
+
+    for buttons in inline_hotlined_subject_keyboard_to_ch.to_dict()['inline_keyboard'][
+                   :len(inline_hotlined_subject_keyboard_to_ch.to_dict()['inline_keyboard']) - 1]:
+        for button in buttons:
+            if button['callback_data'] == call.data:
+                user_hotlines_dict.update({call.message.chat.id: {
+                    'subject': button['text'][button['text'].find('-') + 2:],
+                    'description': '',
+                    'date': '',
+                    'addition_date': button['callback_data'][len('hotline_ch_'):]
+                }})
+
+                hotlined_subject = db.get_hotlines_to_change(call.message.chat.id,
+                                                             user_hotlines_dict[call.message.chat.id]['subject'],
+                                                             user_hotlines_dict[call.message.chat.id]['addition_date'])
+
+                user_hotlines_dict[call.message.chat.id]['description'] = hotlined_subject[0]
+                user_hotlines_dict[call.message.chat.id]['date'] = hotlined_subject[1]
+
+                bot.edit_message_text(f"Выбери новую дату для хотлайна",
+                                      chat_id=call.message.chat.id,
+                                      message_id=call.message.message_id,
+                                      reply_markup=calendar_keyboard,
+                                      parse_mode='HTML',
+                                      disable_web_page_preview=True)
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('hotline_rm_'))
+def hotlines_menu_remove_hotline(call):
+    inline_hotlined_subject_keyboard_to_rm = service.generate_inline_hotlined_subjects_to_remove(call.message.chat.id)
+
+    for buttons in inline_hotlined_subject_keyboard_to_rm.to_dict()['inline_keyboard'][
+                   :len(inline_hotlined_subject_keyboard_to_rm.to_dict()['inline_keyboard']) - 1]:
+        for button in buttons:
+            if button['callback_data'] == call.data:
+                user_hotlines_dict.update({call.message.chat.id: {
+                    'subject': button['text'][button['text'].find('-') + 2:],
+                    'description': '',
+                    'date': '',
+                    'addition_date': button['callback_data'][len('hotline_rm_'):]
+                }})
+
+                hotlined_subject = db.get_hotlines_to_change(call.message.chat.id,
+                                                             user_hotlines_dict[call.message.chat.id]['subject'],
+                                                             user_hotlines_dict[call.message.chat.id]['addition_date'])
+
+                user_hotlines_dict[call.message.chat.id]['description'] = hotlined_subject[0]
+                user_hotlines_dict[call.message.chat.id]['date'] = hotlined_subject[1]
+
+                bot.edit_message_text(f"Ты удаляешь хотлайн:\n\n"
+                                      f"{lorem_ipsum}",
+                                      chat_id=call.message.chat.id,
+                                      message_id=call.message.message_id,
+                                      reply_markup=keyboard_generator.inline_confirm_cancel_hotlines_keyboard,
+                                      parse_mode='HTML',
+                                      disable_web_page_preview=True)
+
+
+@bot.callback_query_handler(func=lambda call: call.data in ['confirm_remove_hotline', 'cancel_remove_hotline'])
+def hotlines_menu_confirm_cancel_remove_hotline(call):
+    if call.data == 'confirm_remove_hotline':
+        bot.delete_message(chat_id=call.message.chat.id,
+                           message_id=call.message.message_id)
+        db.remove_hotline(call.message.chat.id,
+                          user_hotlines_dict[call.message.chat.id]['subject'],
+                          user_hotlines_dict[call.message.chat.id]['description'],
+                          user_hotlines_dict[call.message.chat.id]['date'],
+                          user_hotlines_dict[call.message.chat.id]['addition_date'])
+
+        bot.send_message(call.message.chat.id,
+                         confirm_remove_hotline_reply.format(user_hotlines_dict[call.message.chat.id]['subject']))
+
+    if call.data == 'cancel_remove_hotline':
+        bot.edit_message_text(remove_hotline_reply,
+                              chat_id=call.message.chat.id,
+                              message_id=call.message.message_id,
+                              reply_markup=service.generate_inline_hotlined_subjects_to_remove(call.message.chat.id),
                               parse_mode='HTML')
 
 

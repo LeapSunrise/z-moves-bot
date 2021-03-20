@@ -2,10 +2,10 @@
 #!/usr/bin/python3.8.5
 
 from datetime import datetime, timedelta
-import src.config.config as config
 
 import psycopg2
 
+import src.config.config as config
 
 __connection = None
 
@@ -122,7 +122,6 @@ def get_hotlines(uid):
     if len(q) == 0:
         return None
     else:
-        print(q)
         return q
 
 
@@ -192,7 +191,6 @@ def auto_remove_hotline():
     c = conn.cursor()
 
     dm = f"'{datetime.strftime(datetime.now() - timedelta(2), '%d.%m')}'"
-    print(dm)
 
     c.execute(
         f'SELECT * FROM hotlines WHERE date <= {dm}'

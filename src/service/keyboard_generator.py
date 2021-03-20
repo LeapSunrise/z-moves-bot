@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/python3.8.5
+
 from src.service.buttons import *
+
 
 def generate_default_keyboard(*button_text_tuple):
     """

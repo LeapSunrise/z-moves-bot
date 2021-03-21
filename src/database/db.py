@@ -92,7 +92,7 @@ def add_hotline(user_id, subject, description, date, group_binding, addition_dat
     c = conn.cursor()
     c.execute(
         'INSERT INTO hotlines (user_id, subject, description, date, group_binding, addition_date)'
-        'VALUES (%s, %s, %s, %s, %s)',
+        'VALUES (%s, %s, %s, %s, %s, %s)',
         (user_id, subject, description, date, group_binding, addition_date)
     )
     conn.commit()
@@ -112,11 +112,12 @@ def get_links(user_id, group_binding):
         return q
 
 
-def get_hotlines(uid):
+def get_hotlines(user_id, group_binding):
     conn = get_connection()
     c = conn.cursor()
     c.execute(
-        'SELECT * FROM hotlines WHERE user_id = %s ORDER BY ("right"(date, 2), "left"(date, 2))', (uid,)
+        'SELECT * FROM hotlines WHERE user_id = %s AND group_binding = %s ORDER BY ("right"(date, 2), "left"(date, 2))',
+        (user_id, group_binding,)
     )
     q = c.fetchall()
     hotline_text = ''
@@ -130,7 +131,7 @@ def get_hotlines_to_change(user_id, subject, addition_date):
     conn = get_connection()
     c = conn.cursor()
     c.execute(
-        'SELECT description, date FROM hotlines WHERE user_id = %s AND subject = %s AND addition_date = %s',
+        'SELECT description, date FROM hotlines WHERE user_id = %s AND subject = %s AND addition_date = %s ',
         (user_id, subject, addition_date)
     )
     return c.fetchone()

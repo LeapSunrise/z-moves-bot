@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/python3.8.5
 
-import datetime
+
 import random
 import time
 
@@ -635,11 +635,12 @@ def input_hotline(message):
                      time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
         user_hotlines_dict[message.chat.id]['addition_date'] = time.strftime('%d/%m/%y, %X')
-
+        user_group = db.get_user_info(message.chat.id)[2]
         db.add_hotline(message.chat.id,
                        user_hotlines_dict[message.chat.id]['subject'],
                        user_hotlines_dict[message.chat.id]['description'],
                        user_hotlines_dict[message.chat.id]['date'],
+                       user_group,
                        user_hotlines_dict[message.chat.id]['addition_date'])
 
     else:
@@ -829,11 +830,13 @@ def input_password(message):
                      time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
         user_links_dict[message.chat.id]['addition_time'] = time.strftime('%d/%m/%y %X')
+        user_group = db.get_user_info(message.chat.id)[2]
         db.add_link(message.chat.id,
                     user_links_dict[message.chat.id]['subject'],
                     user_links_dict[message.chat.id]['subject_type'],
                     user_links_dict[message.chat.id]['link'],
                     user_links_dict[message.chat.id]['password'],
+                    user_group,
                     user_links_dict[message.chat.id]['addition_time'])
 
     elif message.text == change_link_button:

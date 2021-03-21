@@ -3,6 +3,7 @@
 import requests
 import src.database.db as db
 import datetime
+
 free_day = '''
 ░░▄█████████████████▄
 ░▐████▀▒▒БОЛДАК▒▒▀████
@@ -44,10 +45,13 @@ subject_enumeration = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣']
 
 def get_current_week():
     try:
+        api_request = requests.get('http://api.rozklad.org.ua/v2/weeks', timeout=3).json()['data']
         if datetime.date.today().weekday() + 1 == 7:
-            return requests.get('http://api.rozklad.org.ua/v2/weeks', timeout=3).json()['data'] + 1
+            return api_request + 1
+
         else:
-            return requests.get('http://api.rozklad.org.ua/v2/weeks', timeout=3).json()['data']
+            return api_request
+
     except requests.exceptions.ConnectionError:
         return 'prosto privet. prosto kak dela...'
 
@@ -128,7 +132,7 @@ class Schedule:
 
                                 schedule_body += subject_link
 
-            hotlines = db.get_hotlines(user_id)
+            hotlines = db.get_hotlines(user_id, user_group)
             if hotlines is not None:
                 hotlines_body += f"{sep}\n\n👺 Хотлайны:\n\n"
                 for i in hotlines:

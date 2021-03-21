@@ -312,11 +312,12 @@ def links_menu_change_link(call):
                     'subject_type': button['text'][:button['text'].find(' ')],
                     'addition_date': button['callback_data'][len('link_ch_'):]
                 }})
-
+                print(user_links_dict)
                 linked_subject = db.get_links_to_change(call.message.chat.id,
                                                         user_links_dict[call.message.chat.id]['subject'],
                                                         user_links_dict[call.message.chat.id]['subject_type'],
                                                         user_links_dict[call.message.chat.id]['addition_date'])
+                print(linked_subject)
 
                 user_links_dict[call.message.chat.id]['link'] = linked_subject[3]
                 user_links_dict[call.message.chat.id]['password'] = linked_subject[4]

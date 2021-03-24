@@ -164,9 +164,26 @@ def main_menu(message):
                      message.chat.id)
 
     elif message.text == hotlines_button:
+        hotlines_body = ''
+        user_group = db.get_user_info(message.chat.id)[2]
+        hotlines = db.get_hotlines(message.chat.id, user_group)
+        if hotlines is not None:
+            hotlines_body += f"👺 Хотлайны:\n\n"
+            for i in hotlines:
+                hotlines_body += f"<i>{i[1]}</i> - {i[2]} - <b>{i[3].strftime('%d.%m')}</b> "
+                if (i[3] - datetime.datetime.now().date()).days == 0:
+                    hotlines_body += '‼'
+                elif (i[3] - datetime.datetime.now().date()).days < 0:
+                    hotlines_body += '❌'
+                elif 0 < (i[3] - datetime.datetime.now().date()).days <= 3:
+                    hotlines_body += '❗'
+                hotlines_body += '\n'
+        else:
+            hotlines_body += 'Сейчас у тебя нету хотлайнов.'
         bot.send_message(message.chat.id,
-                         hotlines_reply,
-                         reply_markup=service.dynamic_menu_hotlines_inline_keyboard_generator(message.chat.id))
+                         hotlines_body,
+                         reply_markup=service.dynamic_menu_hotlines_inline_keyboard_generator(message.chat.id),
+                         parse_mode='HTML')
         db.set_state(message.from_user.username,
                      stateworker.States.S_MAIN_MENU.value,
                      time.strftime('%d/%m/%y, %X'),
@@ -460,7 +477,23 @@ def hotlines_menu(call):
                               parse_mode='HTML')
 
     if call.data == 'hotlines_first_back_button':
-        bot.edit_message_text(hotlines_reply,
+        hotlines_body = ''
+        user_group = db.get_user_info(call.message.chat.id)[2]
+        hotlines = db.get_hotlines(call.message.chat.id, user_group)
+        if hotlines is not None:
+            hotlines_body += f"👺 Хотлайны:\n\n"
+            for i in hotlines:
+                hotlines_body += f"<i>{i[1]}</i> - {i[2]} - <b>{i[3].strftime('%d.%m')}</b> "
+                if (i[3] - datetime.datetime.now().date()).days == 0:
+                    hotlines_body += '‼'
+                elif (i[3] - datetime.datetime.now().date()).days < 0:
+                    hotlines_body += '❌'
+                elif 0 < (i[3] - datetime.datetime.now().date()).days <= 3:
+                    hotlines_body += '❗'
+                hotlines_body += '\n'
+        else:
+            hotlines_body += 'Сейчас у тебя нету хотлайнов'
+        bot.edit_message_text(hotlines_body,
                               chat_id=call.message.chat.id,
                               message_id=call.message.message_id,
                               reply_markup=service.dynamic_menu_hotlines_inline_keyboard_generator(
@@ -510,7 +543,7 @@ def hotlines_menu_change_hotline(call):
                 hotlined_subject = db.get_hotlines_to_change(call.message.chat.id,
                                                              user_hotlines_dict[call.message.chat.id]['subject'],
                                                              user_hotlines_dict[call.message.chat.id]['addition_date'])
-
+                print(hotlined_subject)
                 user_hotlines_dict[call.message.chat.id]['description'] = hotlined_subject[0]
                 user_hotlines_dict[call.message.chat.id]['date'] = hotlined_subject[1]
 
@@ -605,7 +638,7 @@ def input_hotline_date(call: telebot.types.CallbackQuery):
                          time.strftime('%d/%m/%y, %X'),
                          call.message.chat.id)
 
-        user_hotlines_dict[call.message.chat.id]['date'] = date.strftime('%d.%m')
+        user_hotlines_dict[call.message.chat.id]['date'] = date.now().date()
 
     elif action == "CANCEL":
         bot.send_message(chat_id=call.from_user.id,
@@ -646,10 +679,11 @@ def input_hotline(message):
 
     else:
         user_hotlines_dict[message.chat.id]['description'] = message.text
+        print(user_hotlines_dict[message.chat.id]['date'])
         bot.send_message(message.chat.id,
                          f"<b>{user_hotlines_dict[message.chat.id]['subject']}</b> - "
                          f"<b>{user_hotlines_dict[message.chat.id]['description']}</b> - "
-                         f"<b>{user_hotlines_dict[message.chat.id]['date']}</b>",
+                         f"<b>{user_hotlines_dict[message.chat.id]['date'].strftime('%d.%m')}</b>",
                          reply_markup=keyboard_generator.generate_default_keyboard_row((confirm_button,),
                                                                                        (cancel_button,)),
                          parse_mode='HTML')

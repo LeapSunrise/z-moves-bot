@@ -2,10 +2,10 @@
 #!/usr/bin/python3.8.5
 
 from datetime import datetime, timedelta
-import src.config.config as config
 
 import psycopg2
 
+import src.config.config as config
 
 __connection = None
 
@@ -76,33 +76,34 @@ def get_user_info(uid):
     return c.fetchone()
 
 
-def add_link(user_id, subject, subject_type, link, password, addition_time):
+def add_link(user_id, subject, subject_type, link, password, group_binding, addition_time):
     conn = get_connection()
     c = conn.cursor()
     c.execute(
-        'INSERT INTO links (user_id, subject, subject_type, link, password, addition_date) '
+        'INSERT INTO links (user_id, subject, subject_type, link, password, group_binding, addition_date) '
+        'VALUES (%s, %s, %s, %s, %s, %s, %s)',
+        (user_id, subject, subject_type, link, password, group_binding, addition_time,)
+    )
+    conn.commit()
+
+
+def add_hotline(user_id, subject, description, date, group_binding, addition_date):
+    conn = get_connection()
+    c = conn.cursor()
+    c.execute(
+        'INSERT INTO hotlines (user_id, subject, description, date, group_binding, addition_date)'
         'VALUES (%s, %s, %s, %s, %s, %s)',
-        (user_id, subject, subject_type, link, password, addition_time,)
+        (user_id, subject, description, date, group_binding, addition_date)
     )
     conn.commit()
 
 
-def add_hotline(user_id, subject, description, date, addition_date):
+def get_links(user_id, group_binding):
     conn = get_connection()
     c = conn.cursor()
     c.execute(
-        'INSERT INTO hotlines (user_id, subject, description, date, addition_date)'
-        'VALUES (%s, %s, %s, %s, %s)',
-        (user_id, subject, description, date, addition_date)
-    )
-    conn.commit()
-
-
-def get_links(uid):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute(
-        'SELECT * FROM links WHERE user_id = %s', (uid,)
+        'SELECT * FROM links WHERE user_id = %s and group_binding = %s',
+        (user_id, group_binding,)
     )
     q = c.fetchall()
     if len(q) == 0:
@@ -111,18 +112,18 @@ def get_links(uid):
         return q
 
 
-def get_hotlines(uid):
+def get_hotlines(user_id, group_binding):
     conn = get_connection()
     c = conn.cursor()
     c.execute(
-        'SELECT * FROM hotlines WHERE user_id = %s ORDER BY ("right"(date, 2), "left"(date, 2))', (uid,)
+        'SELECT * FROM hotlines WHERE user_id = %s AND group_binding = %s ORDER BY ("right"(date, 2), "left"(date, 2))',
+        (user_id, group_binding,)
     )
     q = c.fetchall()
     hotline_text = ''
     if len(q) == 0:
         return None
     else:
-        print(q)
         return q
 
 
@@ -130,7 +131,7 @@ def get_hotlines_to_change(user_id, subject, addition_date):
     conn = get_connection()
     c = conn.cursor()
     c.execute(
-        'SELECT description, date FROM hotlines WHERE user_id = %s AND subject = %s AND addition_date = %s',
+        'SELECT description, date FROM hotlines WHERE user_id = %s AND subject = %s AND addition_date = %s ',
         (user_id, subject, addition_date)
     )
     return c.fetchone()
@@ -192,7 +193,6 @@ def auto_remove_hotline():
     c = conn.cursor()
 
     dm = f"'{datetime.strftime(datetime.now() - timedelta(2), '%d.%m')}'"
-    print(dm)
 
     c.execute(
         f'SELECT * FROM hotlines WHERE date <= {dm}'

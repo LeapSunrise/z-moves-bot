@@ -19,34 +19,49 @@ info_button = 'ℹ️Инфо'
 help_button = '❓ Помощь'
 
 # main_menu/links
-inline_add_link_button = telebot.types.InlineKeyboardButton(text='Добавить ссылку', callback_data='add_link')
-inline_change_link_button = telebot.types.InlineKeyboardButton(text='Изменить ссылку', callback_data='change_link')
-inline_remove_link_button = telebot.types.InlineKeyboardButton(text='Удалить ссылку', callback_data='remove_link')
+inline_add_link_button = telebot.types.InlineKeyboardButton(text='Добавить ссылку',
+                                                            callback_data='add_link')
+inline_change_link_button = telebot.types.InlineKeyboardButton(text='Изменить ссылку',
+                                                               callback_data='change_link')
+inline_remove_link_button = telebot.types.InlineKeyboardButton(text='Удалить ссылку',
+                                                               callback_data='remove_link')
 inline_remove_link_confirm_button = telebot.types.InlineKeyboardButton(text='Подтвердить',
                                                                        callback_data='confirm_remove_link')
-inline_remove_link_cancel_button = telebot.types.InlineKeyboardButton(text='Отмена', callback_data='cancel_remove_link')
+inline_remove_link_cancel_button = telebot.types.InlineKeyboardButton(text='Отмена',
+                                                                      callback_data='cancel_remove_link')
 
-inline_lec_button = telebot.types.InlineKeyboardButton(text='Лек', callback_data='lec')
-inline_prac_button = telebot.types.InlineKeyboardButton(text='Прак', callback_data='prac')
-inline_lab_button = telebot.types.InlineKeyboardButton(text='Лаб', callback_data='lab')
+inline_lec_button = telebot.types.InlineKeyboardButton(text='Лек',
+                                                       callback_data='lec')
+inline_prac_button = telebot.types.InlineKeyboardButton(text='Прак',
+                                                        callback_data='prac')
+inline_lab_button = telebot.types.InlineKeyboardButton(text='Лаб',
+                                                       callback_data='lab')
 
-inline_first_back_button = telebot.types.InlineKeyboardButton(text='Назад', callback_data='first_back_button')
-inline_second_back_button = telebot.types.InlineKeyboardButton(text='Назад', callback_data='second_back_button')
+inline_links_first_back_button = telebot.types.InlineKeyboardButton(text='Назад',
+                                                                    callback_data='links_first_back_button')
+inline_links_second_back_button = telebot.types.InlineKeyboardButton(text='Назад',
+                                                                     callback_data='links_second_back_button')
 
-
+# links
 add_password_button = 'Добавить пароль'
 change_password_button = 'Изменить пароль'
 change_link_button = 'Изменить ссылку'
 
 # main_menu/hotlines
-inline_add_hotline_button = telebot.types.InlineKeyboardButton(text='Добавить хотлайн', callback_data='add_hotline')
-inline_change_hotline_button = telebot.types.InlineKeyboardButton(text='Изменить хотлайн', callback_data='change_hotline')
-inline_remove_hotline_button = telebot.types.InlineKeyboardButton(text='Удалить хотлайн', callback_data='remove_hotline')
+inline_add_hotline_button = telebot.types.InlineKeyboardButton(text='Добавить хотлайн',
+                                                               callback_data='add_hotline')
+inline_change_hotline_button = telebot.types.InlineKeyboardButton(text='Изменить хотлайн',
+                                                                  callback_data='change_hotline')
+inline_remove_hotline_button = telebot.types.InlineKeyboardButton(text='Удалить хотлайн',
+                                                                  callback_data='remove_hotline')
 
-inline_remove_hotline_confirm_button = telebot.types.InlineKeyboardButton(text='Подтвердить', callback_data='confirm_remove_hotline')
-inline_remove_hotline_cancel_button = telebot.types.InlineKeyboardButton(text='Отмена', callback_data='cancel_remove_hotline')
+inline_remove_hotline_confirm_button = telebot.types.InlineKeyboardButton(text='Подтвердить',
+                                                                          callback_data='confirm_remove_hotline')
+inline_remove_hotline_cancel_button = telebot.types.InlineKeyboardButton(text='Отмена',
+                                                                         callback_data='cancel_remove_hotline')
 
-inline_first_back_button_hotlines = telebot.types.InlineKeyboardButton(text='Назад', callback_data='first_back_button_hl')
+inline_first_back_button_hotlines = telebot.types.InlineKeyboardButton(text='Назад',
+                                                                       callback_data='hotlines_first_back_button')
 
 
 # schedule_menu
@@ -80,5 +95,5 @@ back_button = '⬅️Назад'
 confirm_button = '✅ Готово'
 cancel_button = '❌ Отмена'
 
-# апи умер
+# API bad request
 dead_api = 'Проверка на жизнь API'

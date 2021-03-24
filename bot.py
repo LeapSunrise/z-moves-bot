@@ -1,19 +1,17 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/python3.8.5
 
-import datetime
-import time
-import src.config.config as config
-from src.service.replies import *
+
 import random
+import time
 
-from telebot_calendar import Calendar, RUSSIAN_LANGUAGE
+from telebot_calendar import Calendar, CallbackData, RUSSIAN_LANGUAGE
 
-from telebot_calendar import CallbackData
-
+import src.config.config as config
 from src.schedule_parser.schedule_parser import *
 from src.service import keyboard_generator, stateworker, service
 from src.service.buttons import *
+from src.service.replies import *
 from src.service.service import rozklad_api_work_checker as api_checker
 
 bot = telebot.TeleBot(config.BOT_TOKEN)
@@ -73,7 +71,7 @@ def start_message(message):
                          time.strftime('%d/%m/%y, %X'),
                          time.strftime('%d/%m/%y, %X'))
 
-    if db.get_user_info(message.chat.id)[2] is None:
+    elif db.get_user_info(message.chat.id)[2] is None:
         bot.send_message(message.chat.id,
                          repeated_start_reply,
                          reply_markup=None,
@@ -97,14 +95,15 @@ def start_message(message):
 
 @bot.message_handler(func=lambda message: (db.get_state(message.chat.id).__class__ == tuple and
                      (db.get_state(message.chat.id)[0] == stateworker.States.S_REGISTRATION.value or
-                     db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_GROUP.value)))
+                      db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_GROUP.value)) and
+                     message.text.startswith("#") is False)
 def group_registration(message):
     if Schedule.is_group_exist(message.text):
         bot.send_message(message.chat.id,
                          successful_registration,
                          reply_markup=keyboard_generator.main_menu_keyboard)
         db.register_user_group_name(message.from_user.username,
-                                    message.text,
+                                    message.text.lower(),
                                     stateworker.States.S_MAIN_MENU.value,
                                     time.strftime('%d/%m/%y, %X'),
                                     message.chat.id)
@@ -209,95 +208,52 @@ user_hotlines_dict = {}  # hotlines manager dictionary
 #####################################################################################################################"""
 
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith(calendar_1.prefix) is False)
+@bot.callback_query_handler(func=lambda call: call.data in ['add_link', 'change_link', 'remove_link',
+                                                            'links_first_back_button', 'links_second_back_button'])
 def links_menu(call):
-    inline_subject_keyboard_to_add_link = service.generate_inline_subjects_to_add_link(call.message.chat.id)
-    inline_linked_subject_keyboard_to_ch = service.generate_inline_linked_subjects_to_change(call.message.chat.id)
-    inline_linked_subject_keyboard_to_rm = service.generate_inline_linked_subjects_to_remove(call.message.chat.id)
-
-    inline_subject_keyboard_to_add_hotline = service.generate_inline_subjects_to_add_hotline(call.message.chat.id)
-    inline_hotlined_subject_keyboard_to_ch = service.generate_inline_hotlined_subjects_to_change(call.message.chat.id)
-    inline_hotlined_subject_keyboard_to_rm = service.generate_inline_hotlined_subjects_to_remove(call.message.chat.id)
-
-    inline_subject_type_keyboard = telebot.types.InlineKeyboardMarkup()
-    inline_subject_type_keyboard.add(inline_lec_button, inline_lab_button, inline_prac_button)
-    inline_subject_type_keyboard.add(inline_second_back_button)
-
-    inline_confirm_cancel_keyboard = telebot.types.InlineKeyboardMarkup()
-    inline_confirm_cancel_keyboard.add(inline_remove_link_cancel_button, inline_remove_link_confirm_button)
-
-    inline_confirm_cancel_keyboard_hl = telebot.types.InlineKeyboardMarkup()
-    inline_confirm_cancel_keyboard_hl.add(inline_remove_hotline_cancel_button, inline_remove_hotline_confirm_button)
-
-    if call.data == 'add_link' or call.data == 'second_back_button':
-        bot.edit_message_text(f"Выбери предмет для которого нужно добавить ссылку",
+    if call.data == 'add_link' or call.data == 'links_second_back_button':
+        bot.edit_message_text(add_link_reply,
                               chat_id=call.message.chat.id,
                               message_id=call.message.message_id,
-                              reply_markup=inline_subject_keyboard_to_add_link,
-                              parse_mode='HTML')
-
-    if call.data == 'add_hotline':
-        bot.edit_message_text(f"Выбери предмет для которого нужно добавить хотлайн",
-                              chat_id=call.message.chat.id,
-                              message_id=call.message.message_id,
-                              reply_markup=inline_subject_keyboard_to_add_hotline,
+                              reply_markup=service.generate_inline_subjects_to_add_link(call.message.chat.id),
                               parse_mode='HTML')
 
     if call.data == 'change_link':
-        bot.edit_message_text(f"Выбери предмет для которого нужно изменить ссылку",
+        bot.edit_message_text(change_link_reply,
                               chat_id=call.message.chat.id,
                               message_id=call.message.message_id,
-                              reply_markup=inline_linked_subject_keyboard_to_ch,
-                              parse_mode='HTML')
-
-    if call.data == 'change_hotline':
-        bot.edit_message_text(f"Выбери предмет для которого нужно изменить хотлайн",
-                              chat_id=call.message.chat.id,
-                              message_id=call.message.message_id,
-                              reply_markup=inline_hotlined_subject_keyboard_to_ch,
+                              reply_markup=service.generate_inline_linked_subjects_to_change(call.message.chat.id),
                               parse_mode='HTML')
 
     if call.data == 'remove_link':
-        bot.edit_message_text(f"Выбери предмет для которого нужно удалить ссылку",
+        bot.edit_message_text(remove_link_reply,
                               chat_id=call.message.chat.id,
                               message_id=call.message.message_id,
-                              reply_markup=inline_linked_subject_keyboard_to_rm,
+                              reply_markup=service.generate_inline_linked_subjects_to_remove(call.message.chat.id),
                               parse_mode='HTML')
 
-    if call.data == 'remove_hotline':
-        bot.edit_message_text(f"Выбери хотлайн, который нужно удалить",
-                              chat_id=call.message.chat.id,
-                              message_id=call.message.message_id,
-                              reply_markup=inline_hotlined_subject_keyboard_to_rm,
-                              parse_mode='HTML')
-
-    if call.data == 'first_back_button':
-        bot.edit_message_text(f"Здесь ты можешь добавлять ссылки к предметам, изменять и даже их удалять, "
-                              f"если они есть.",
+    if call.data == 'links_first_back_button':
+        bot.edit_message_text(links_reply,
                               chat_id=call.message.chat.id,
                               message_id=call.message.message_id,
                               reply_markup=service.dynamic_menu_links_inline_keyboard_generator(call.message.chat.id),
                               parse_mode='HTML')
 
-    if call.data == 'first_back_button_hl':
-        bot.edit_message_text(f"Выбери предмет для которого нужно добавить хотлайн",
-                              chat_id=call.message.chat.id,
-                              message_id=call.message.message_id,
-                              reply_markup=service.dynamic_menu_hotlines_inline_keyboard_generator(
-                                  call.message.chat.id),
-                              parse_mode='HTML')
 
-    # jump to ADD_LINK state
-    if inline_subject_keyboard_to_add_link != '' and call.data in [button['callback_data'] for buttons in
-                                                                   inline_subject_keyboard_to_add_link.to_dict()[
-                                                                       'inline_keyboard']
-                                                                   for button in buttons]:
-        print(inline_subject_keyboard_to_add_link.to_dict()['inline_keyboard'])
-        for buttons in inline_subject_keyboard_to_add_link.to_dict()['inline_keyboard'][
-                       :len(inline_subject_keyboard_to_add_link.to_dict()[
-                                'inline_keyboard']) - 1]:  # тут -1 чтобы не ловилась бэк-кнопка
+@bot.callback_query_handler(func=lambda call: call.data.startswith('link_add_'))
+def links_menu_add_link_subject(call):
+    inline_subject_keyboard_to_add_link = service.generate_inline_subjects_to_add_link(call.message.chat.id)
+
+    if inline_subject_keyboard_to_add_link != '' and call.data in \
+            [button['callback_data'] for buttons in inline_subject_keyboard_to_add_link.to_dict()['inline_keyboard']
+             for button in buttons]:
+        for buttons in \
+                inline_subject_keyboard_to_add_link.to_dict()['inline_keyboard'][
+                :len(inline_subject_keyboard_to_add_link.to_dict()[
+                         'inline_keyboard']) - 1]:  # тут -1 чтобы не ловилась бэк-кнопка
 
             for button in buttons:
+
                 if button['callback_data'] == call.data:
                     user_links_dict.update({call.message.chat.id: {
                         'addition_date': '',
@@ -311,151 +267,144 @@ def links_menu(call):
                                           f"Выбери тип занятия 🙃",
                                           chat_id=call.message.chat.id,
                                           message_id=call.message.message_id,
-                                          reply_markup=inline_subject_type_keyboard,
+                                          reply_markup=keyboard_generator.inline_subject_type_keyboard,
                                           parse_mode='HTML')
 
-    if inline_subject_type_keyboard != '' and call.data in [button['callback_data'] for buttons in
-                                                            inline_subject_type_keyboard.to_dict()['inline_keyboard']
-                                                            for button in buttons]:
-        for button in inline_subject_type_keyboard.to_dict()['inline_keyboard'][
-            0]:  # тут [0] чтобы не ловилась бэк-кнопка
+
+@bot.callback_query_handler(func=lambda call: call.data in ['lec', 'lab', 'prac'])
+def links_menu_add_link_subject_type(call):
+    type_inverter_dict = {'lec': 'Лек',
+                          'lab': 'Лаб',
+                          'prac': 'Прак'
+                          }
+    if call.data == 'lec' or call.data == 'lab' or call.data == 'prac':
+        user_links_dict[call.message.chat.id]['subject_type'] = type_inverter_dict[call.data]
+
+        bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
+
+        keyboard = keyboard_generator.generate_default_keyboard(cancel_button)
+
+        bot.send_message(call.message.chat.id,
+                         f"Предмет: <b>{user_links_dict[call.message.chat.id]['subject']}</b>\n"
+                         f"Тип занятия: <b>{user_links_dict[call.message.chat.id]['subject_type']}</b>\n\n"
+                         f"Теперь попрошу скинуть мне ссылочку 🤓",
+                         reply_markup=keyboard,
+                         parse_mode='HTML')
+        db.set_state(call.from_user.username,
+                     stateworker.States.S_INPUT_LINK.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     call.message.chat.id)
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('link_ch_'))
+def links_menu_change_link(call):
+    inline_linked_subject_keyboard_to_ch = service.generate_inline_linked_subjects_to_change(call.message.chat.id)
+
+    for buttons in inline_linked_subject_keyboard_to_ch.to_dict()['inline_keyboard'][
+                   :len(inline_linked_subject_keyboard_to_ch.to_dict()[
+                            'inline_keyboard']) - 1]:  # -1 чтобы не ловилась бэк-кнопка
+        for button in buttons:
+
             if button['callback_data'] == call.data:
-                user_links_dict[call.message.chat.id]['subject_type'] = button['text']
-                bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-                keyboard = keyboard_generator.generate_default_keyboard(cancel_button)
-                bot.send_message(call.message.chat.id,
-                                 f"Предмет: <b>{user_links_dict[call.message.chat.id]['subject']}</b>\n"
-                                 f"Тип занятия: <b>{user_links_dict[call.message.chat.id]['subject_type']}</b>\n\n"
-                                 f"Теперь попрошу скинуть мне ссылочку 🤓",
-                                 reply_markup=keyboard,
-                                 parse_mode='HTML')
-                db.set_state(call.from_user.username,
-                             stateworker.States.S_INPUT_LINK.value,
+
+                user_links_dict.update({call.message.chat.id: {
+                    'subject': button['text'][button['text'].find('-') + 2:],
+                    'subject_type': button['text'][:button['text'].find(' ')],
+                    'addition_date': button['callback_data'][len('link_ch_'):]
+                }})
+                print(user_links_dict)
+                linked_subject = db.get_links_to_change(call.message.chat.id,
+                                                        user_links_dict[call.message.chat.id]['subject'],
+                                                        user_links_dict[call.message.chat.id]['subject_type'],
+                                                        user_links_dict[call.message.chat.id]['addition_date'])
+                print(linked_subject)
+
+                user_links_dict[call.message.chat.id]['link'] = linked_subject[3]
+                user_links_dict[call.message.chat.id]['password'] = linked_subject[4]
+
+                bot.delete_message(chat_id=call.message.chat.id,
+                                   message_id=call.message.message_id)
+
+                if user_links_dict[call.message.chat.id]['password'] == '':
+                    bot.send_message(call.message.chat.id,
+                                     f"Предмет: <b>{user_links_dict[call.message.chat.id]['subject']}</b>\n"
+                                     f"Тип занятия: <b>{user_links_dict[call.message.chat.id]['subject_type']}</b>\n"
+                                     f"Ссылка: <b>{user_links_dict[call.message.chat.id]['link']}</b>\n",
+                                     reply_markup=keyboard_generator.generate_default_keyboard_row(
+                                         (add_password_button, confirm_button),
+                                         (cancel_button,)),
+                                     parse_mode='HTML',
+                                     disable_web_page_preview=True)
+
+                elif user_links_dict[call.message.chat.id]['password'] != '':
+                    bot.send_message(call.message.chat.id,
+                                     f"Предмет: <b>{user_links_dict[call.message.chat.id]['subject']}</b>\n"
+                                     f"Тип занятия: <b>{user_links_dict[call.message.chat.id]['subject_type']}</b>\n"
+                                     f"Ссылка: <b>{user_links_dict[call.message.chat.id]['link']}</b>\n"
+                                     f"Пароль: <b>{user_links_dict[call.message.chat.id]['password']}</b>\n",
+                                     reply_markup=keyboard_generator.generate_default_keyboard_row(
+                                         (change_password_button, confirm_button),
+                                         (cancel_button,)),
+                                     parse_mode='HTML',
+                                     disable_web_page_preview=True)
+
+                db.set_state(call.message.from_user.username,
+                             stateworker.States.S_CHANGE_LINK.value,
                              time.strftime('%d/%m/%y, %X'),
                              call.message.chat.id)
 
-    # jump to CHANGE_LINK state
 
-    if inline_linked_subject_keyboard_to_ch != '' and \
-            call.data in [button['callback_data'] for buttons in
-                          inline_linked_subject_keyboard_to_ch.to_dict()['inline_keyboard'] for button in buttons]:
-        for buttons in inline_linked_subject_keyboard_to_ch.to_dict()['inline_keyboard'][
-                       :len(inline_linked_subject_keyboard_to_ch.to_dict()[
-                                'inline_keyboard']) - 1]:  # тут -1 чтобы не ловилась бэк-кнопка
-            for button in buttons:
+@bot.callback_query_handler(func=lambda call: call.data.startswith('link_rm_'))
+def links_menu_remove_link(call):
+    inline_linked_subject_keyboard_to_rm = service.generate_inline_linked_subjects_to_remove(call.message.chat.id)
 
-                if button['callback_data'] == call.data:
+    for buttons in inline_linked_subject_keyboard_to_rm.to_dict()['inline_keyboard'][
+                   :len(inline_linked_subject_keyboard_to_rm.to_dict()[
+                            'inline_keyboard']) - 1]:  # тут -1 чтобы не ловилась бэк-кнопка
+        for button in buttons:
+            if button['callback_data'] == call.data:
+                user_links_dict.update({call.message.chat.id: {
+                    'subject': button['text'][int(button['text'].find('-')) + 2:],  # текст кнопки после '- '
+                    'subject_type': button['text'][:int(button['text'].find(' '))],  # текст кнопки до пробела
+                    'link': '',
+                    'password': '',
+                    'addition_date': button['callback_data'][len('link_rm_'):]
+                }})
 
-                    user_links_dict.update({call.message.chat.id: {  # колдата после _
-                        'subject': button['text'][button['text'].find('-') + 2:],  # после -+пробел
-                        'subject_type': button['text'][:button['text'].find(' ')],  # до первого пробела
-                        'addition_date': button['callback_data'][button['callback_data'].find('_') + 1:]
-                        # колдата после _
-                    }})
+                linked_subject = db.get_links_to_change(call.message.chat.id,
+                                                        user_links_dict[call.message.chat.id]['subject'],
+                                                        user_links_dict[call.message.chat.id]['subject_type'],
+                                                        user_links_dict[call.message.chat.id]['addition_date'])
 
-                    user_links_dict[call.message.chat.id]['link'] = db.get_links_to_change(call.message.chat.id,
-                                                                                           user_links_dict[
-                                                                                               call.message.chat.id][
-                                                                                               'subject'],
-                                                                                           user_links_dict[
-                                                                                               call.message.chat.id][
-                                                                                               'subject_type'],
-                                                                                           user_links_dict[
-                                                                                               call.message.chat.id][
-                                                                                               'addition_date'])[3]
+                user_links_dict[call.message.chat.id]['link'] = linked_subject[3]  # 3 - ссылка
+                user_links_dict[call.message.chat.id]['password'] = linked_subject[4]  # 4 - пароль
 
-                    user_links_dict[call.message.chat.id]['password'] = db.get_links_to_change(call.message.chat.id,
-                                                                                               user_links_dict[
-                                                                                                   call.message.chat.id][
-                                                                                                   'subject'],
-                                                                                               user_links_dict[
-                                                                                                   call.message.chat.id][
-                                                                                                   'subject_type'],
-                                                                                               user_links_dict[
-                                                                                                   call.message.chat.id][
-                                                                                                   'addition_date'])[4]
+                if user_links_dict[call.message.chat.id]['password'] == '':
+                    bot.edit_message_text(f"Ты удаляешь:\n"
+                                          f"Предмет: <b>{user_links_dict[call.message.chat.id]['subject']}</b>\n"
+                                          f"Тип занятия: <b>{user_links_dict[call.message.chat.id]['subject_type']}</b>\n"
+                                          f"Ссылка: <b>{user_links_dict[call.message.chat.id]['link']}</b>\n",
+                                          chat_id=call.message.chat.id,
+                                          message_id=call.message.message_id,
+                                          reply_markup=keyboard_generator.inline_confirm_cancel_links_keyboard,
+                                          parse_mode='HTML',
+                                          disable_web_page_preview=True)
 
-                    bot.delete_message(chat_id=call.message.chat.id,
-                                       message_id=call.message.message_id)
+                elif user_links_dict[call.message.chat.id]['password'] != '':
+                    bot.edit_message_text(f"Ты удаляешь:\n"
+                                          f"Предмет: <b>{user_links_dict[call.message.chat.id]['subject']}</b>\n"
+                                          f"Тип занятия: <b>{user_links_dict[call.message.chat.id]['subject_type']}</b>\n"
+                                          f"Ссылка: <b>{user_links_dict[call.message.chat.id]['link']}</b>\n"
+                                          f"Пароль: <b>{user_links_dict[call.message.chat.id]['password']}</b>",
+                                          chat_id=call.message.chat.id,
+                                          message_id=call.message.message_id,
+                                          reply_markup=keyboard_generator.inline_confirm_cancel_links_keyboard,
+                                          parse_mode='HTML',
+                                          disable_web_page_preview=True)
 
-                    if user_links_dict[call.message.chat.id]['password'] == '':
-                        bot.send_message(call.message.chat.id,
-                                         f"Предмет: <b>{user_links_dict[call.message.chat.id]['subject']}</b>\n"
-                                         f"Тип занятия: <b>{user_links_dict[call.message.chat.id]['subject_type']}</b>\n"
-                                         f"Ссылка: <b>{user_links_dict[call.message.chat.id]['link']}</b>\n",
-                                         reply_markup=keyboard_generator.generate_default_keyboard_row(
-                                             (add_password_button, confirm_button),
-                                             (cancel_button,)),
-                                         parse_mode='HTML',
-                                         disable_web_page_preview=True)
 
-                    elif user_links_dict[call.message.chat.id]['password'] != '':
-                        bot.send_message(call.message.chat.id,
-                                         f"Предмет: <b>{user_links_dict[call.message.chat.id]['subject']}</b>\n"
-                                         f"Тип занятия: <b>{user_links_dict[call.message.chat.id]['subject_type']}</b>\n"
-                                         f"Ссылка: <b>{user_links_dict[call.message.chat.id]['link']}</b>\n"
-                                         f"Пароль: <b>{user_links_dict[call.message.chat.id]['password']}</b>\n",
-                                         reply_markup=keyboard_generator.generate_default_keyboard_row(
-                                             (change_password_button, confirm_button),
-                                             (cancel_button,)),
-                                         parse_mode='HTML',
-                                         disable_web_page_preview=True)
-
-                    db.set_state(call.message.from_user.username,
-                                 stateworker.States.S_CHANGE_LINK.value,
-                                 time.strftime('%d/%m/%y, %X'),
-                                 call.message.chat.id)
-
-    # remove link
-    if inline_linked_subject_keyboard_to_rm != '' and \
-            call.data in [button['callback_data'] for buttons in
-                          inline_linked_subject_keyboard_to_rm.to_dict()['inline_keyboard'] for button in buttons]:
-        for buttons in inline_linked_subject_keyboard_to_rm.to_dict()['inline_keyboard'][
-                       :len(inline_linked_subject_keyboard_to_rm.to_dict()[
-                                'inline_keyboard']) - 1]:  # тут -1 чтобы не ловилась бэк-кнопка
-            for button in buttons:
-                if button['callback_data'] == call.data:
-                    user_links_dict.update({call.message.chat.id: {
-                        'subject': button['text'][int(button['text'].find('-')) + 2:],  # текст кнопки после '- '
-                        'subject_type': button['text'][:int(button['text'].find(' '))],  # текст кнопки до ' '
-                        'link': '',
-                        'password': '',
-                        'addition_date': button['callback_data'][button['callback_data'].find('_') + 1:]
-                    }})
-                    user_links_dict[call.message.chat.id]['link'] = \
-                        db.get_links_to_change(call.message.chat.id,
-                                               user_links_dict[call.message.chat.id]['subject'],
-                                               user_links_dict[call.message.chat.id]['subject_type'],
-                                               user_links_dict[call.message.chat.id]['addition_date'])[3]  # 3 - ссылка
-                    user_links_dict[call.message.chat.id]['password'] = \
-                        db.get_links_to_change(call.message.chat.id,
-                                               user_links_dict[call.message.chat.id]['subject'],
-                                               user_links_dict[call.message.chat.id]['subject_type'],
-                                               user_links_dict[call.message.chat.id]['addition_date'])[4]  # 4 - пароль
-
-                    if user_links_dict[call.message.chat.id]['password'] == '':
-                        bot.edit_message_text(f"Ты удаляешь:\n"
-                                              f"Предмет: <b>{user_links_dict[call.message.chat.id]['subject']}</b>\n"
-                                              f"Тип занятия: <b>{user_links_dict[call.message.chat.id]['subject_type']}</b>\n"
-                                              f"Ссылка: <b>{user_links_dict[call.message.chat.id]['link']}</b>\n",
-                                              chat_id=call.message.chat.id,
-                                              message_id=call.message.message_id,
-                                              reply_markup=inline_confirm_cancel_keyboard,
-                                              parse_mode='HTML',
-                                              disable_web_page_preview=True)
-
-                    elif user_links_dict[call.message.chat.id]['password'] != '':
-                        bot.edit_message_text(f"Ты удаляешь:\n"
-                                              f"Предмет: <b>{user_links_dict[call.message.chat.id]['subject']}</b>\n"
-                                              f"Тип занятия: <b>{user_links_dict[call.message.chat.id]['subject_type']}</b>\n"
-                                              f"Ссылка: <b>{user_links_dict[call.message.chat.id]['link']}</b>\n"
-                                              f"Пароль: <b>{user_links_dict[call.message.chat.id]['password']}</b>",
-                                              chat_id=call.message.chat.id,
-                                              message_id=call.message.message_id,
-                                              reply_markup=inline_confirm_cancel_keyboard,
-                                              parse_mode='HTML',
-                                              disable_web_page_preview=True)
-
+@bot.callback_query_handler(func=lambda call: call.data in ['confirm_remove_link', 'cancel_remove_link'])
+def links_menu_confirm_cancel_remove_link(call):
     if call.data == 'confirm_remove_link':
         bot.delete_message(chat_id=call.message.chat.id,
                            message_id=call.message.message_id)
@@ -477,31 +426,55 @@ def links_menu(call):
         bot.edit_message_text(f"Выбери предмет для удаления ссылки",
                               chat_id=call.message.chat.id,
                               message_id=call.message.message_id,
-                              reply_markup=inline_linked_subject_keyboard_to_rm,
+                              reply_markup=service.generate_inline_linked_subjects_to_remove(call.message.chat.id),
                               parse_mode='HTML')
 
-    if call.data == 'confirm_remove_hotline':
-        bot.delete_message(chat_id=call.message.chat.id,
-                           message_id=call.message.message_id)
-        db.remove_hotline(call.message.chat.id,
-                          user_hotlines_dict[call.message.chat.id]['subject'],
-                          user_hotlines_dict[call.message.chat.id]['description'],
-                          user_hotlines_dict[call.message.chat.id]['date'],
-                          user_hotlines_dict[call.message.chat.id]['addition_date'])
 
-        bot.send_message(call.message.chat.id,
-                         f"Хотлайн {user_hotlines_dict[call.message.chat.id]['subject']} успешно удалён")
+"""#####################################################################################################################
+                                                    MAIN MENU/HOTLINE MENU
+#####################################################################################################################"""
 
-    if call.data == 'cancel_remove_hotline':
-        bot.edit_message_text(f"Выбери хотлайн для удаления",
+
+@bot.callback_query_handler(func=lambda call: call.data in ['add_hotline', 'change_hotline', 'remove_hotline',
+                                                            'hotlines_first_back_button'])
+def hotlines_menu(call):
+    if call.data == 'add_hotline':
+        bot.edit_message_text(add_hotline_reply,
                               chat_id=call.message.chat.id,
                               message_id=call.message.message_id,
-                              reply_markup=inline_hotlined_subject_keyboard_to_rm,
+                              reply_markup=service.generate_inline_subjects_to_add_hotline(call.message.chat.id),
                               parse_mode='HTML')
 
-    if inline_subject_keyboard_to_add_hotline != '' and \
-            call.data in [button['callback_data'] for buttons in
-                          inline_subject_keyboard_to_add_hotline.to_dict()['inline_keyboard'] for button in buttons]:
+    if call.data == 'change_hotline':
+        bot.edit_message_text(change_hotline_reply,
+                              chat_id=call.message.chat.id,
+                              message_id=call.message.message_id,
+                              reply_markup=service.generate_inline_hotlined_subjects_to_change(call.message.chat.id),
+                              parse_mode='HTML')
+
+    if call.data == 'remove_hotline':
+        bot.edit_message_text(remove_hotline_reply,
+                              chat_id=call.message.chat.id,
+                              message_id=call.message.message_id,
+                              reply_markup=service.generate_inline_hotlined_subjects_to_remove(call.message.chat.id),
+                              parse_mode='HTML')
+
+    if call.data == 'hotlines_first_back_button':
+        bot.edit_message_text(hotlines_reply,
+                              chat_id=call.message.chat.id,
+                              message_id=call.message.message_id,
+                              reply_markup=service.dynamic_menu_hotlines_inline_keyboard_generator(
+                                  call.message.chat.id),
+                              parse_mode='HTML')
+
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('hotline_add_'))
+def hotlines_menu_add_hotline(call):
+    inline_subject_keyboard_to_add_hotline = service.generate_inline_subjects_to_add_hotline(call.message.chat.id)
+
+    if inline_subject_keyboard_to_add_hotline != '' and call.data in \
+            [button['callback_data'] for buttons in
+             inline_subject_keyboard_to_add_hotline.to_dict()['inline_keyboard'] for button in buttons]:
         for buttons in inline_subject_keyboard_to_add_hotline.to_dict()['inline_keyboard'][
                        :len(inline_subject_keyboard_to_add_hotline.to_dict()['inline_keyboard']) - 1]:
             for button in buttons:
@@ -518,74 +491,88 @@ def links_menu(call):
                                           reply_markup=calendar_keyboard,
                                           parse_mode='HTML')
 
-    if inline_hotlined_subject_keyboard_to_ch != '' and \
-            call.data in [button['callback_data'] for buttons in
-                          inline_hotlined_subject_keyboard_to_ch.to_dict()['inline_keyboard'] for button in buttons]:
 
-        for buttons in inline_hotlined_subject_keyboard_to_ch.to_dict()['inline_keyboard'][
-                       :len(inline_hotlined_subject_keyboard_to_ch.to_dict()['inline_keyboard']) - 1]:
-            for button in buttons:
-                if button['callback_data'] == call.data:
-                    user_hotlines_dict.update({call.message.chat.id: {
-                        'subject': button['text'][button['text'].find('-') + 2:],
-                        'description': '',
-                        'date': '',
-                        'addition_date': button['callback_data'][button['callback_data'].find('_') + 1:]
-                    }})
+@bot.callback_query_handler(func=lambda call: call.data.startswith('hotline_ch_'))
+def hotlines_menu_change_hotline(call):
+    inline_hotlined_subject_keyboard_to_ch = service.generate_inline_hotlined_subjects_to_change(call.message.chat.id)
 
-                    user_hotlines_dict[call.message.chat.id]['description'] = \
-                        db.get_hotlines_to_change(call.message.chat.id,
-                                                  user_hotlines_dict[call.message.chat.id]['subject'],
-                                                  user_hotlines_dict[call.message.chat.id]['addition_date'])[0]
-                    user_hotlines_dict[call.message.chat.id]['date'] = db.get_hotlines_to_change(call.message.chat.id,
-                                                                                                 user_hotlines_dict[
-                                                                                                     call.message.chat.id][
-                                                                                                     'subject'],
-                                                                                                 user_hotlines_dict[
-                                                                                                     call.message.chat.id][
-                                                                                                     'addition_date'])[
-                        1]
-                    bot.edit_message_text(f"Выбери новую дату для хотлайна",
-                                          chat_id=call.message.chat.id,
-                                          message_id=call.message.message_id,
-                                          reply_markup=calendar_keyboard,
-                                          parse_mode='HTML',
-                                          disable_web_page_preview=True)
+    for buttons in inline_hotlined_subject_keyboard_to_ch.to_dict()['inline_keyboard'][
+                   :len(inline_hotlined_subject_keyboard_to_ch.to_dict()['inline_keyboard']) - 1]:
+        for button in buttons:
+            if button['callback_data'] == call.data:
+                user_hotlines_dict.update({call.message.chat.id: {
+                    'subject': button['text'][button['text'].find('-') + 2:],
+                    'description': '',
+                    'date': '',
+                    'addition_date': button['callback_data'][len('hotline_ch_'):]
+                }})
 
-    if inline_hotlined_subject_keyboard_to_rm != '' and call.data in [button['callback_data'] for buttons in
-                                                                      inline_hotlined_subject_keyboard_to_rm.to_dict()[
-                                                                          'inline_keyboard'][:len(
-                                                                          inline_hotlined_subject_keyboard_to_rm.to_dict()[
-                                                                              'inline_keyboard']) - 1] for button in
-                                                                      buttons]:
-        for buttons in inline_hotlined_subject_keyboard_to_rm.to_dict()['inline_keyboard'][
-                       :len(inline_hotlined_subject_keyboard_to_rm.to_dict()['inline_keyboard']) - 1]:
-            for button in buttons:
-                if button['callback_data'] == call.data:
-                    user_hotlines_dict.update({call.message.chat.id: {
-                        'subject': button['text'][button['text'].find('-') + 2:],
-                        'description': '',
-                        'date': '',
-                        'addition_date': button['callback_data'][button['callback_data'].find('_') + 1:]
-                    }})
+                hotlined_subject = db.get_hotlines_to_change(call.message.chat.id,
+                                                             user_hotlines_dict[call.message.chat.id]['subject'],
+                                                             user_hotlines_dict[call.message.chat.id]['addition_date'])
 
-                    user_hotlines_dict[call.message.chat.id]['description'] = \
-                        db.get_hotlines_to_change(call.message.chat.id,
-                                                  user_hotlines_dict[call.message.chat.id]['subject'],
-                                                  user_hotlines_dict[call.message.chat.id]['addition_date'])[0]
+                user_hotlines_dict[call.message.chat.id]['description'] = hotlined_subject[0]
+                user_hotlines_dict[call.message.chat.id]['date'] = hotlined_subject[1]
 
-                    user_hotlines_dict[call.message.chat.id]['date'] = \
-                        db.get_hotlines_to_change(call.message.chat.id,
-                                                  user_hotlines_dict[call.message.chat.id]['subject'],
-                                                  user_hotlines_dict[call.message.chat.id]['addition_date'])[1]
+                bot.edit_message_text(f"Выбери новую дату для хотлайна",
+                                      chat_id=call.message.chat.id,
+                                      message_id=call.message.message_id,
+                                      reply_markup=calendar_keyboard,
+                                      parse_mode='HTML',
+                                      disable_web_page_preview=True)
 
-                    bot.edit_message_text(f"Ты удаляешь хотлайн:\n\n"
-                                          f"{lorem_ipsum}",
-                                          chat_id=call.message.chat.id,
-                                          message_id=call.message.message_id,
-                                          reply_markup=inline_confirm_cancel_keyboard_hl,
-                                          parse_mode='HTML',
-                                          disable_web_page_preview=True)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith('hotline_rm_'))
+def hotlines_menu_remove_hotline(call):
+    inline_hotlined_subject_keyboard_to_rm = service.generate_inline_hotlined_subjects_to_remove(call.message.chat.id)
+
+    for buttons in inline_hotlined_subject_keyboard_to_rm.to_dict()['inline_keyboard'][
+                   :len(inline_hotlined_subject_keyboard_to_rm.to_dict()['inline_keyboard']) - 1]:
+        for button in buttons:
+            if button['callback_data'] == call.data:
+                user_hotlines_dict.update({call.message.chat.id: {
+                    'subject': button['text'][button['text'].find('-') + 2:],
+                    'description': '',
+                    'date': '',
+                    'addition_date': button['callback_data'][len('hotline_rm_'):]
+                }})
+
+                hotlined_subject = db.get_hotlines_to_change(call.message.chat.id,
+                                                             user_hotlines_dict[call.message.chat.id]['subject'],
+                                                             user_hotlines_dict[call.message.chat.id]['addition_date'])
+
+                user_hotlines_dict[call.message.chat.id]['description'] = hotlined_subject[0]
+                user_hotlines_dict[call.message.chat.id]['date'] = hotlined_subject[1]
+
+                bot.edit_message_text(f"Ты удаляешь хотлайн:\n\n"
+                                      f"{lorem_ipsum}",
+                                      chat_id=call.message.chat.id,
+                                      message_id=call.message.message_id,
+                                      reply_markup=keyboard_generator.inline_confirm_cancel_hotlines_keyboard,
+                                      parse_mode='HTML',
+                                      disable_web_page_preview=True)
+
+
+@bot.callback_query_handler(func=lambda call: call.data in ['confirm_remove_hotline', 'cancel_remove_hotline'])
+def hotlines_menu_confirm_cancel_remove_hotline(call):
+    if call.data == 'confirm_remove_hotline':
+        bot.delete_message(chat_id=call.message.chat.id,
+                           message_id=call.message.message_id)
+        db.remove_hotline(call.message.chat.id,
+                          user_hotlines_dict[call.message.chat.id]['subject'],
+                          user_hotlines_dict[call.message.chat.id]['description'],
+                          user_hotlines_dict[call.message.chat.id]['date'],
+                          user_hotlines_dict[call.message.chat.id]['addition_date'])
+
+        bot.send_message(call.message.chat.id,
+                         confirm_remove_hotline_reply.format(user_hotlines_dict[call.message.chat.id]['subject']))
+
+    if call.data == 'cancel_remove_hotline':
+        bot.edit_message_text(remove_hotline_reply,
+                              chat_id=call.message.chat.id,
+                              message_id=call.message.message_id,
+                              reply_markup=service.generate_inline_hotlined_subjects_to_remove(call.message.chat.id),
+                              parse_mode='HTML')
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith(calendar_1.prefix))
@@ -605,7 +592,7 @@ def input_hotline_date(call: telebot.types.CallbackQuery):
                          text=f"Предмет: {user_hotlines_dict[call.message.chat.id]['subject']}\n"
                               f"Дата: {date.strftime('%d.%m')}\n\n"
                               f"Теперь добавь описание :)",
-                         reply_markup=telebot.types.ReplyKeyboardRemove())
+                         reply_markup=keyboard_generator.generate_default_keyboard(cancel_button))
 
         if len(user_hotlines_dict[call.message.chat.id]) == 3:
             db.set_state(call.message.from_user.username,
@@ -627,7 +614,7 @@ def input_hotline_date(call: telebot.types.CallbackQuery):
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[0] == stateworker.States.S_INPUT_HOTLINE.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_INPUT_HOTLINE.value)
 def input_hotline(message):
     if message.text == cancel_button:
         bot.send_message(message.chat.id,
@@ -649,11 +636,12 @@ def input_hotline(message):
                      time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
         user_hotlines_dict[message.chat.id]['addition_date'] = time.strftime('%d/%m/%y, %X')
-
+        user_group = db.get_user_info(message.chat.id)[2]
         db.add_hotline(message.chat.id,
                        user_hotlines_dict[message.chat.id]['subject'],
                        user_hotlines_dict[message.chat.id]['description'],
                        user_hotlines_dict[message.chat.id]['date'],
+                       user_group,
                        user_hotlines_dict[message.chat.id]['addition_date'])
 
     else:
@@ -668,7 +656,7 @@ def input_hotline(message):
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_HOTLINE.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_HOTLINE.value)
 def change_hotline(message):
     if message.text == cancel_button:
         bot.send_message(message.chat.id,
@@ -679,7 +667,7 @@ def change_hotline(message):
                      time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
 
-    if message.text == confirm_button:
+    elif message.text == confirm_button:
         bot.send_message(message.chat.id,
                          f"Хотлайн для <b>'{user_hotlines_dict[message.chat.id]['subject']}' </b>"
                          f"успешно изменён.",
@@ -713,7 +701,7 @@ def change_hotline(message):
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[0] == stateworker.States.S_INPUT_LINK.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_INPUT_LINK.value)
 def input_link(message):
     if message.text == cancel_button:
         bot.send_message(message.chat.id,
@@ -737,6 +725,7 @@ def input_link(message):
                     user_links_dict[message.chat.id]['subject_type'],
                     user_links_dict[message.chat.id]['link'],
                     user_links_dict[message.chat.id]['password'],
+                    db.get_user_info(message.chat.id)[2],
                     user_links_dict[message.chat.id]['addition_time'])
         db.set_state(message.from_user.username,
                      stateworker.States.S_MAIN_MENU.value,
@@ -842,11 +831,13 @@ def input_password(message):
                      time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
         user_links_dict[message.chat.id]['addition_time'] = time.strftime('%d/%m/%y %X')
+        user_group = db.get_user_info(message.chat.id)[2]
         db.add_link(message.chat.id,
                     user_links_dict[message.chat.id]['subject'],
                     user_links_dict[message.chat.id]['subject_type'],
                     user_links_dict[message.chat.id]['link'],
                     user_links_dict[message.chat.id]['password'],
+                    user_group,
                     user_links_dict[message.chat.id]['addition_time'])
 
     elif message.text == change_link_button:
@@ -910,7 +901,7 @@ def input_password(message):
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_LINK.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_CHANGE_LINK.value)
 def change_link(message):
     if message.text == cancel_button:
         bot.send_message(message.chat.id,
@@ -1121,16 +1112,12 @@ def change_password(message):
 
 
 """#####################################################################################################################
-                                                    MAIN MENU/HOTLINES MENU
-#####################################################################################################################"""
-
-"""#####################################################################################################################
                                                     SCHEDULE MENU
 #####################################################################################################################"""
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[0] == stateworker.States.S_SCHEDULE_MENU.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_SCHEDULE_MENU.value)
 def schedule_menu(message):
     if message.text == back_button:
         bot.send_message(message.chat.id,
@@ -1183,8 +1170,7 @@ def schedule_menu(message):
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[
-                                              0] == stateworker.States.S_SCHEDULE_WEEK_VIEW_1.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_SCHEDULE_WEEK_VIEW_1.value)
 def week_view_1(message):
     for i in range(0, 5):
         if message.text == week1_day_buttons[i]:
@@ -1209,8 +1195,7 @@ def week_view_1(message):
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[
-                                              0] == stateworker.States.S_SCHEDULE_WEEK_VIEW_2.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_SCHEDULE_WEEK_VIEW_2.value)
 def week_view_2(message):
     for i in range(0, 5):
         if message.text == week2_day_buttons[i]:
@@ -1240,7 +1225,7 @@ def week_view_2(message):
 
 
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
-                                          db.get_state(message.chat.id)[0] == stateworker.States.S_SETTINGS_MENU.value)
+                     db.get_state(message.chat.id)[0] == stateworker.States.S_SETTINGS_MENU.value)
 def settings_menu(message):
     if message.text == back_button:
         bot.send_message(message.chat.id,

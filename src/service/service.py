@@ -12,9 +12,10 @@ def dynamic_menu_links_inline_keyboard_generator(chat_id):
     :param chat_id:
     :return:
     """
+    user_group = db.get_user_info(chat_id)[2]
     keyboard = telebot.types.InlineKeyboardMarkup()
     keyboard.add(inline_add_link_button)
-    if db.get_links(chat_id) is not None:
+    if db.get_links(chat_id, user_group) is not None:
         keyboard.add(inline_change_link_button)
         keyboard.add(inline_remove_link_button)
     return keyboard
@@ -27,9 +28,10 @@ def dynamic_menu_hotlines_inline_keyboard_generator(chat_id):
     :param chat_id:
     :return:
     """
+    user_group = db.get_user_info(chat_id)[2]
     keyboard = telebot.types.InlineKeyboardMarkup()
     keyboard.add(inline_add_hotline_button)
-    if db.get_hotlines(chat_id) is not None:
+    if db.get_hotlines(chat_id, user_group) is not None:
         keyboard.add(inline_change_hotline_button)
         keyboard.add(inline_remove_hotline_button)
     return keyboard
@@ -47,8 +49,8 @@ def generate_inline_subjects_to_add_link(chat_id):
     list_subjects = tuple(Schedule.get_lessons(chat_id))
     keyboard = telebot.types.InlineKeyboardMarkup()
     for item in list_subjects:
-        keyboard.add(telebot.types.InlineKeyboardButton(text=item, callback_data=f"l_{item[:10]}"))
-    keyboard.add(inline_first_back_button)
+        keyboard.add(telebot.types.InlineKeyboardButton(text=item, callback_data=f"link_add_{item[:25]}"))
+    keyboard.add(inline_links_first_back_button)
 
     return keyboard
 
@@ -65,7 +67,7 @@ def generate_inline_subjects_to_add_hotline(chat_id):
     list_subjects = tuple(Schedule.get_lessons(chat_id))
     keyboard = telebot.types.InlineKeyboardMarkup()
     for item in list_subjects:
-        keyboard.add(telebot.types.InlineKeyboardButton(text=item, callback_data=f"hl_{item[:10]}"))
+        keyboard.add(telebot.types.InlineKeyboardButton(text=item, callback_data=f"hotline_add_{item[:25]}"))
     keyboard.add(inline_first_back_button_hotlines)
 
     return keyboard
@@ -80,12 +82,13 @@ def generate_inline_linked_subjects_to_change(chat_id):
     :param chat_id:
     :return:
     """
+    user_group = db.get_user_info(chat_id)[2]
     keyboard = telebot.types.InlineKeyboardMarkup()
-    if db.get_links(chat_id) is not None:
-        for item in db.get_links(chat_id):
+    if db.get_links(chat_id, user_group) is not None:
+        for item in db.get_links(chat_id, user_group):
             keyboard.add(telebot.types.InlineKeyboardButton(text=f"{item[2]} - {item[1]}",
-                                                            callback_data=f"lch_{item[5]}"))
-        keyboard.add(inline_first_back_button)
+                                                            callback_data=f"link_ch_{item[6]}"))
+        keyboard.add(inline_links_first_back_button)
         return keyboard
 
     else:
@@ -101,12 +104,13 @@ def generate_inline_hotlined_subjects_to_change(chat_id):
     :param chat_id:
     :return:
     """
+    user_group = db.get_user_info(chat_id)[2]
     keyboard = telebot.types.InlineKeyboardMarkup()
-    if db.get_hotlines(chat_id) is not None:
+    if db.get_hotlines(chat_id, user_group) is not None:
 
-        for item in db.get_hotlines(chat_id):
+        for item in db.get_hotlines(chat_id, user_group):
             keyboard.add(telebot.types.InlineKeyboardButton(text=f"{item[3]} - {item[1]}",
-                                                            callback_data=f"hlch_{item[4]}"))
+                                                            callback_data=f"hotline_ch_{item[5]}"))
         keyboard.add(inline_first_back_button_hotlines)
         return keyboard
 
@@ -123,13 +127,13 @@ def generate_inline_linked_subjects_to_remove(chat_id):
     :param chat_id:
     :return:
     """
-
+    user_group = db.get_user_info(chat_id)[2]
     keyboard = telebot.types.InlineKeyboardMarkup()
-    if db.get_links(chat_id) is not None:
-        for item in db.get_links(chat_id):
+    if db.get_links(chat_id, user_group) is not None:
+        for item in db.get_links(chat_id, user_group):
             keyboard.add(telebot.types.InlineKeyboardButton(text=f"{item[2]} - {item[1]}",
-                                                            callback_data=f"lrm_{item[5]}"))
-        keyboard.add(inline_first_back_button)
+                                                            callback_data=f"link_rm_{item[6]}"))
+        keyboard.add(inline_links_first_back_button)
         return keyboard
     else:
         return ''
@@ -144,13 +148,12 @@ def generate_inline_hotlined_subjects_to_remove(chat_id):
     :param chat_id:
     :return:
     """
-
+    user_group = db.get_user_info(chat_id)[2]
     keyboard = telebot.types.InlineKeyboardMarkup()
-    if db.get_hotlines(chat_id) is not None:
-        print(db.get_hotlines(chat_id))
-        for item in db.get_hotlines(chat_id):
+    if db.get_hotlines(chat_id, user_group) is not None:
+        for item in db.get_hotlines(chat_id, user_group):
             keyboard.add(telebot.types.InlineKeyboardButton(text=f"{item[3]} - {item[1]}",
-                                                            callback_data=f"hlrm_{item[4]}"))
+                                                            callback_data=f"hotline_rm_{item[5]}"))
         keyboard.add(inline_first_back_button_hotlines)
         return keyboard
 

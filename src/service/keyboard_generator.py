@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/python3.8.5
+
 from src.service.buttons import *
+
 
 def generate_default_keyboard(*button_text_tuple):
     """
@@ -74,3 +76,13 @@ week2_day_choose_keyboard = generate_default_keyboard_row(
 
 settings_menu_keyboard = generate_default_keyboard_row((notifications_button, change_group_button),
                                                        (back_button,))
+
+inline_subject_type_keyboard = telebot.types.InlineKeyboardMarkup()
+inline_subject_type_keyboard.add(inline_lec_button, inline_lab_button, inline_prac_button)
+inline_subject_type_keyboard.add(inline_links_second_back_button)
+
+inline_confirm_cancel_links_keyboard = telebot.types.InlineKeyboardMarkup()
+inline_confirm_cancel_links_keyboard.add(inline_remove_link_cancel_button, inline_remove_link_confirm_button)
+
+inline_confirm_cancel_hotlines_keyboard = telebot.types.InlineKeyboardMarkup()
+inline_confirm_cancel_hotlines_keyboard.add(inline_remove_hotline_cancel_button, inline_remove_hotline_confirm_button)

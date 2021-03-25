@@ -136,7 +136,14 @@ class Schedule:
             if hotlines is not None:
                 hotlines_body += f"{sep}\n\n👺 Хотлайны:\n\n"
                 for i in hotlines:
-                    hotlines_body += f"{i[1]} - {i[2]} - {i[3]}\n"
+                    hotlines_body += f"<i>{i[1]}</i> - {i[2]} - <b>{i[3].strftime('%d.%m')}</b> "
+                    if (i[3] - datetime.datetime.now().date()).days == 0:
+                        hotlines_body += '‼'
+                    elif (i[3] - datetime.datetime.now().date()).days < 0:
+                        hotlines_body += '❌'
+                    elif 0 < (i[3] - datetime.datetime.now().date()).days <= 3:
+                        hotlines_body += '❗'
+                    hotlines_body += '\n'
 
             if schedule_body == '':
                 schedule_body = free_day

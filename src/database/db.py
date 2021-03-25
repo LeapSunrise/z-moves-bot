@@ -113,18 +113,21 @@ def get_links(user_id, group_binding):
 
 
 def get_hotlines(user_id, group_binding):
-    conn = get_connection()
-    c = conn.cursor()
-    c.execute(
-        'SELECT * FROM hotlines WHERE user_id = %s AND group_binding = %s ORDER BY ("right"(date, 2), "left"(date, 2))',
-        (user_id, group_binding,)
-    )
-    q = c.fetchall()
-    hotline_text = ''
-    if len(q) == 0:
-        return None
-    else:
-        return q
+    try:
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute(
+            'SELECT * FROM hotlines WHERE user_id = %s AND group_binding = %s ORDER BY date',
+            (user_id, group_binding,)
+        )
+        q = c.fetchall()
+        hotline_text = ''
+        if len(q) == 0:
+            return None
+        else:
+            return q
+    except Exception:
+        return 'lox1'
 
 
 def get_hotlines_to_change(user_id, subject, addition_date):
@@ -189,21 +192,25 @@ def remove_hotline(user_id, subject, description, date, addition_date):
 
 
 def auto_remove_hotline():
-    conn = get_connection()
-    c = conn.cursor()
+    try:
+        conn = get_connection()
+        c = conn.cursor()
 
-    dm = f"'{datetime.strftime(datetime.now() - timedelta(2), '%d.%m')}'"
+        dead_date = f"{datetime.date(datetime.now() - timedelta(2))}"
+        print(dead_date)
 
-    c.execute(
-        f'SELECT * FROM hotlines WHERE date <= {dm}'
-    )
-    q = c.fetchall()
-
-    if len(q) != 0:
         c.execute(
-            f'DELETE FROM hotlines WHERE date <= {dm}'
+            f'SELECT * FROM hotlines WHERE date <= {dead_date}'
         )
-        conn.commit()
+        q = c.fetchall()
+
+        if len(q) != 0:
+            c.execute(
+                f'DELETE FROM hotlines WHERE date <= {dead_date}'
+            )
+            conn.commit()
+    except Exception:
+        return 'lox'
 
 
 def update_blocked_users(user_id, user_name, first_activity, last_activity):

@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/python3.8.5
+from src.database import db
+from src.service import service
+import datetime
 
 #  registration
 start_reply = "Привет, {0}! 🥴🤙\nZ-Moves на связи 😎\n\n"\
@@ -17,17 +20,16 @@ schedule_reply = "Выбери опцию отображения расписа�
 settings_reply = "Что нужно настроить?"
 
 # links
-links_reply = "Здесь ты можешь прикреплять ссылки к предметам, изменять и удалять их, если они есть."
-add_link_reply = "Выбери предмет для которого нужно добавить ссылку"
-change_link_reply = "Выбери предмет для которого нужно изменить ссылку"
-remove_link_reply = "Выбери предмет для которого нужно удалить ссылку"
+add_link_reply = "Выбери предмет для которого нужно добавить ссылку."
+change_link_reply = "Выбери предмет для которого нужно изменить ссылку."
+remove_link_reply = "Выбери предмет для которого нужно удалить ссылку."
 
 # hotlines
-hotlines_reply = "Здесь ты можешь добавлять хотлайны (дедлайны - плохо), изменять и удалять их, если они есть."
-add_hotline_reply = "Выбери предмет для которого нужно добавить хотлайн"
-change_hotline_reply = "Выбери предмет для которого нужно изменить хотлайн"
-remove_hotline_reply = "Выбери хотлайн, который нужно удалить"
-confirm_remove_hotline_reply = "Хотлайн {0} успешно удалён"
+
+add_hotline_reply = "Выбери предмет для которого нужно добавить хотлайн."
+change_hotline_reply = "Выбери предмет для которого нужно изменить хотлайн."
+remove_hotline_reply = "Выбери хотлайн, который нужно удалить."
+confirm_remove_hotline_reply = "Хотлайн для «<b>{0}</b>» успешно удалён."
 
 # info
 info_button_reply = "Ты залогинен под группой: <b>{0}</b>\n\n" \
@@ -79,3 +81,43 @@ lorem_ipsum = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do e
               " aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse" \
               " cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa" \
               " qui officia deserunt mollit anim id est laborum."
+
+
+def hotlines_reply(user_id):
+    hotlines_body = ''
+    user_group = db.get_user_info(user_id)[2]
+    hotlines = db.get_hotlines(user_id, user_group)
+    if hotlines is not None:
+        hotlines_body += f"👺 Хотлайны:\n\n"
+        for i in hotlines:
+            hotlines_body += f"<i>{i[1]}</i> - {i[2]} - <b>{i[3].strftime('%d.%m')}</b> "
+            if (i[3] - datetime.datetime.now().date()).days == 0:
+                hotlines_body += '‼'
+            elif (i[3] - datetime.datetime.now().date()).days < 0:
+                hotlines_body += '❌'
+            elif 0 < (i[3] - datetime.datetime.now().date()).days <= 3:
+                hotlines_body += '❗'
+            hotlines_body += '\n'
+    else:
+        hotlines_body += 'На текущий момент у тебя нету хотлайнов.'
+    return hotlines_body
+
+
+def links_reply(user_id):
+    links_body = ''
+    user_group = db.get_user_info(user_id)[2]
+    links = db.get_links(user_id, user_group)
+    if links is not None:
+        links_body += f"🔗 Твои ссылки: \n\n"
+        for i in links:
+            if i[4] == '':
+                links_body += f"Предмет: <i>{i[1]}</i> - <b>{i[2]}</b>\n" \
+                              f"Ссылка: {i[3]}\n"
+            else:
+                links_body += f"Предмет: <i>{i[1]}</i> - <b>{i[2]}</b>\n" \
+                              f"Ссылка: {i[3]}\n" \
+                              f"Код доступа: {i[4]}\n"
+            links_body += '\n'
+    else:
+        links_body = 'На текущий момент у тебя нет ссылок.'
+    return links_body

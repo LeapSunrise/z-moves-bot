@@ -4,6 +4,8 @@
 from src.schedule_parser.schedule_parser import *
 from src.service.buttons import *
 
+separator = '_' * 35
+
 
 def dynamic_menu_links_inline_keyboard_generator(chat_id):
     """
@@ -109,7 +111,7 @@ def generate_inline_hotlined_subjects_to_change(chat_id):
     if db.get_hotlines(chat_id, user_group) is not None:
 
         for item in db.get_hotlines(chat_id, user_group):
-            keyboard.add(telebot.types.InlineKeyboardButton(text=f"{item[3]} - {item[1]}",
+            keyboard.add(telebot.types.InlineKeyboardButton(text=f"{item[3].strftime('%d.%m')} - {item[1]}",
                                                             callback_data=f"hotline_ch_{item[5]}"))
         keyboard.add(inline_first_back_button_hotlines)
         return keyboard
@@ -152,7 +154,7 @@ def generate_inline_hotlined_subjects_to_remove(chat_id):
     keyboard = telebot.types.InlineKeyboardMarkup()
     if db.get_hotlines(chat_id, user_group) is not None:
         for item in db.get_hotlines(chat_id, user_group):
-            keyboard.add(telebot.types.InlineKeyboardButton(text=f"{item[3]} - {item[1]}",
+            keyboard.add(telebot.types.InlineKeyboardButton(text=f"{item[3].strftime('%d.%m')} - {item[1]}",
                                                             callback_data=f"hotline_rm_{item[5]}"))
         keyboard.add(inline_first_back_button_hotlines)
         return keyboard

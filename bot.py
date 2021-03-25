@@ -163,8 +163,9 @@ def main_menu(message):
 
     elif message.text == links_button:
         bot.send_message(message.chat.id,
-                         links_reply,
-                         reply_markup=service.dynamic_menu_links_inline_keyboard_generator(message.chat.id))
+                         links_reply(message.chat.id),
+                         reply_markup=service.dynamic_menu_links_inline_keyboard_generator(message.chat.id),
+                         parse_mode='HTML')
         db.set_state(message.from_user.username,
                      stateworker.States.S_MAIN_MENU.value,
                      time.strftime('%d/%m/%y, %X'),
@@ -241,7 +242,7 @@ def links_menu(call):
                               parse_mode='HTML')
 
     if call.data == 'links_first_back_button':
-        bot.edit_message_text(links_reply,
+        bot.edit_message_text(links_reply(call.message.chat.id),
                               chat_id=call.message.chat.id,
                               message_id=call.message.message_id,
                               reply_markup=service.dynamic_menu_links_inline_keyboard_generator(call.message.chat.id),
@@ -422,11 +423,11 @@ def links_menu_confirm_cancel_remove_link(call):
                        user_links_dict[call.message.chat.id]['addition_date'])
 
         bot.send_message(call.message.chat.id,
-                         f"Ссылка <i>'{user_links_dict[call.message.chat.id]['link']}'</i> на предмет "
-                         f"'<b>{user_links_dict[call.message.chat.id]['subject_type']}</b> - "
-                         f"<b>{user_links_dict[call.message.chat.id]['subject']}</b>' "
-                         f"успешно удалена.",
-                         reply_markup=keyboard_generator.main_menu_keyboard,
+                         f"Ссылка <i>{user_links_dict[call.message.chat.id]['link']}</i> для "
+                         f"'«<b>{user_links_dict[call.message.chat.id]['subject_type']}</b> - "
+                         f"<b>{user_links_dict[call.message.chat.id]['subject']}</b>» успешно удалена.\n\n"
+                         f"{links_reply(call.message.chat.id)}",
+                         reply_markup=service.dynamic_menu_links_inline_keyboard_generator(call.message.chat.id),
                          parse_mode='HTML',
                          disable_web_page_preview=True)
 
@@ -553,7 +554,8 @@ def hotlines_menu_remove_hotline(call):
                 user_hotlines_dict[call.message.chat.id]['date'] = hotlined_subject[1]
 
                 bot.edit_message_text(f"Ты удаляешь хотлайн:\n\n"
-                                      f"{lorem_ipsum}",
+                                      f"«<i>{user_hotlines_dict[call.message.chat.id]['subject']}</i>» - "
+                                      f"<b>{user_hotlines_dict[call.message.chat.id]['date'].strftime('%d.%m')}</b>",
                                       chat_id=call.message.chat.id,
                                       message_id=call.message.message_id,
                                       reply_markup=keyboard_generator.inline_confirm_cancel_hotlines_keyboard,
@@ -600,10 +602,11 @@ def input_hotline_date(call: telebot.types.CallbackQuery):
     if action == "DAY":
         user_hotlines_dict[call.message.chat.id]['date'] = date.strftime('%d.%m')
         bot.send_message(chat_id=call.from_user.id,
-                         text=f"Предмет: {user_hotlines_dict[call.message.chat.id]['subject']}\n"
-                              f"Дата: {date.strftime('%d.%m')}\n\n"
+                         text=f"Предмет: «<i>{user_hotlines_dict[call.message.chat.id]['subject']}</i>»\n"
+                              f"Дата: <b>{date.strftime('%d.%m')}</b>\n\n"
                               f"Теперь добавь описание :)",
-                         reply_markup=keyboard_generator.generate_default_keyboard(cancel_button))
+                         reply_markup=keyboard_generator.generate_default_keyboard(cancel_button),
+                         parse_mode='HTML')
 
         if len(user_hotlines_dict[call.message.chat.id]) == 3:
             db.set_state(call.message.from_user.username,

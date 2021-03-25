@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/python3.8.5
 
-import hashlib
-from uuid import uuid4
+
 import random
 import time
-import string
+
 from telebot_calendar import Calendar, CallbackData, RUSSIAN_LANGUAGE
 
 import src.config.config as config
@@ -21,13 +20,8 @@ calendar_1 = CallbackData("calendar_1", "action", "year", "month", "day")
 calendar_keyboard = calendar.create_calendar(name=calendar_1.prefix,
                                              year=datetime.datetime.now().year,
                                              month=datetime.datetime.now().month, )
-token = uuid4()
-token2 = hashlib.md5(b'123')
 
-def randomword(length):
-   ra = '0123456789' + string.ascii_letters + '0123456789'
-   return ''.join(random.choice(ra) for i in range(length))
-print(randomword(23))
+
 """#####################################################################################################################
                                                     START
 #####################################################################################################################"""
@@ -74,6 +68,7 @@ def start_message(message):
                          parse_mode='HTML')
         db.register_user(message.chat.id,
                          message.from_user.username,
+                         service.token_generator(16),
                          stateworker.States.S_REGISTRATION.value,
                          time.strftime('%d/%m/%y, %X'),
                          time.strftime('%d/%m/%y, %X'))

@@ -46,12 +46,12 @@ def get_state(uid: str):
     return c.fetchone()
 
 
-def register_user(user_id, user_name: str, state: str, registration_date: str, last_activity: str):
+def register_user(user_id, user_name: str, user_token, state: str, registration_date: str, last_activity: str):
     conn = get_connection()
     c = conn.cursor()
     c.execute(
-        'INSERT INTO users (user_id, user_name, state, last_activity, registration_date) VALUES (%s, %s, %s, %s, %s)',
-        (user_id, user_name, state, last_activity, registration_date,)
+        'INSERT INTO users (user_id, user_name, user_token, state, last_activity, registration_date) VALUES (%s, %s, %s, %s, %s, %s)',
+        (user_id, user_name, user_token, state, last_activity, registration_date,)
     )
     conn.commit()
 

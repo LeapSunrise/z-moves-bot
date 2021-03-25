@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/python3.8.5
-from src.database import db
-from src.service import service
 import datetime
+
+from src.database import db
 
 #  registration
 start_reply = "Привет, {0}! 🥴🤙\nZ-Moves на связи 😎\n\n"\

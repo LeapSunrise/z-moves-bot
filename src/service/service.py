@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 # !/usr/bin/python3.8.5
 
+import random
+import string
+
 from src.schedule_parser.schedule_parser import *
 from src.service.buttons import *
 
@@ -174,3 +177,8 @@ def rozklad_api_work_checker():
 
     except:
         return False
+
+
+def token_generator(length):
+    ra = '0123456789' + string.ascii_letters + '0123456789'
+    return ''.join(random.choice(ra) for i in range(length))

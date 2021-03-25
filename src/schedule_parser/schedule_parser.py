@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/python3.8.5
-import requests
-import src.database.db as db
 import datetime
+
+import requests
+
+import src.database.db as db
 
 free_day = '''
 ░░▄█████████████████▄

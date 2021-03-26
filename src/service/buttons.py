@@ -89,6 +89,7 @@ week2_day_buttons = [
 # settings_menu
 notifications_button = '📢 Уведомления'
 change_group_button = '‍🎓 Изменить группу'
+import_button = '♿️Импорт'
 
 # global buttons
 back_button = '⬅️Назад'

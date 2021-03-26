@@ -75,6 +75,7 @@ week2_day_choose_keyboard = generate_default_keyboard_row(
     (back_button,))
 
 settings_menu_keyboard = generate_default_keyboard_row((notifications_button, change_group_button),
+                                                       (import_button,),
                                                        (back_button,))
 
 inline_subject_type_keyboard = telebot.types.InlineKeyboardMarkup()

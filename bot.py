@@ -380,6 +380,7 @@ def links_menu_remove_link(call):
                                                         user_links_dict[call.message.chat.id]['subject_type'],
                                                         user_links_dict[call.message.chat.id]['addition_date'])
 
+
                 user_links_dict[call.message.chat.id]['link'] = linked_subject[3]  # 3 - ссылка
                 user_links_dict[call.message.chat.id]['password'] = linked_subject[4]  # 4 - пароль
 
@@ -518,12 +519,12 @@ def hotlines_menu_change_hotline(call):
                 user_hotlines_dict[call.message.chat.id]['description'] = hotlined_subject[0]
                 user_hotlines_dict[call.message.chat.id]['date'] = hotlined_subject[1]
 
-                bot.edit_message_text(f"Выбери новую дату для хотлайна",
-                                      chat_id=call.message.chat.id,
-                                      message_id=call.message.message_id,
-                                      reply_markup=calendar_keyboard,
-                                      parse_mode='HTML',
-                                      disable_web_page_preview=True)
+    bot.edit_message_text(f"Выбери новую дату для хотлайна",
+                          chat_id=call.message.chat.id,
+                          message_id=call.message.message_id,
+                          reply_markup=calendar_keyboard,
+                          parse_mode='HTML',
+                          disable_web_page_preview=True)
 
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith('hotline_rm_'))
@@ -548,14 +549,14 @@ def hotlines_menu_remove_hotline(call):
                 user_hotlines_dict[call.message.chat.id]['description'] = hotlined_subject[0]
                 user_hotlines_dict[call.message.chat.id]['date'] = hotlined_subject[1]
 
-                bot.edit_message_text(f"Ты удаляешь хотлайн:\n\n"
-                                      f"«<i>{user_hotlines_dict[call.message.chat.id]['subject']}</i>» - "
-                                      f"<b>{user_hotlines_dict[call.message.chat.id]['date'].strftime('%d.%m')}</b>",
-                                      chat_id=call.message.chat.id,
-                                      message_id=call.message.message_id,
-                                      reply_markup=keyboard_generator.inline_confirm_cancel_hotlines_keyboard,
-                                      parse_mode='HTML',
-                                      disable_web_page_preview=True)
+    bot.edit_message_text(f"Ты удаляешь хотлайн:\n\n"
+                          f"«<i>{user_hotlines_dict[call.message.chat.id]['subject']}</i>» - "
+                          f"<b>{user_hotlines_dict[call.message.chat.id]['date'].strftime('%d.%m')}</b>",
+                          chat_id=call.message.chat.id,
+                          message_id=call.message.message_id,
+                          reply_markup=keyboard_generator.inline_confirm_cancel_hotlines_keyboard,
+                          parse_mode='HTML',
+                          disable_web_page_preview=True)
 
 
 @bot.callback_query_handler(func=lambda call: call.data in ['confirm_remove_hotline', 'cancel_remove_hotline'])

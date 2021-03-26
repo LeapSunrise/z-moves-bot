@@ -82,6 +82,9 @@ inline_subject_type_keyboard = telebot.types.InlineKeyboardMarkup()
 inline_subject_type_keyboard.add(inline_lec_button, inline_lab_button, inline_prac_button)
 inline_subject_type_keyboard.add(inline_links_second_back_button)
 
+inline_token_keyboard = telebot.types.InlineKeyboardMarkup()
+inline_token_keyboard.add(import_inline_input_token)
+
 inline_confirm_cancel_links_keyboard = telebot.types.InlineKeyboardMarkup()
 inline_confirm_cancel_links_keyboard.add(inline_remove_link_cancel_button, inline_remove_link_confirm_button)
 

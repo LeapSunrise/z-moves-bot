@@ -89,7 +89,8 @@ week2_day_buttons = [
 # settings_menu
 notifications_button = '📢 Уведомления'
 change_group_button = '‍🎓 Изменить группу'
-import_button = '♿️Импорт'
+import_button = '♿️Импорт/Экспорт'
+import_inline_input_token = telebot.types.InlineKeyboardButton(text='Ввести токен', callback_data='token_input')
 
 # global buttons
 back_button = '⬅️Назад'

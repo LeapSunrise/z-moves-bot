@@ -1241,6 +1241,7 @@ def week_view_2(message):
 @bot.message_handler(func=lambda message: db.get_state(message.chat.id).__class__ == tuple and
                      db.get_state(message.chat.id)[0] == stateworker.States.S_SETTINGS_MENU.value)
 def settings_menu(message):
+    user_info = db.get_user_info(message.chat.id)
     if message.text == back_button:
         bot.send_message(message.chat.id,
                          f"Главное меню",
@@ -1249,6 +1250,13 @@ def settings_menu(message):
                      stateworker.States.S_MAIN_MENU.value,
                      time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
+
+    if message.text == import_button:
+        bot.send_message(message.chat.id,
+                         f'Твой токен: <code>{user_info[3]}</code>\n\nОтправь его своему другу, чтобы он смог получить '
+                         f'все твои ссылки и хотлайны.',
+                         reply_markup=keyboard_generator.inline_token_keyboard,
+                         parse_mode='HTML')
 
     if message.text == notifications_button:
         bot.reply_to(message,
@@ -1275,6 +1283,42 @@ def settings_menu(message):
                      stateworker.States.S_SETTINGS_MENU.value,
                      time.strftime('%d/%m/%y, %X'),
                      message.chat.id)
+
+
+@bot.callback_query_handler(func=lambda call: call.data == 'token_input')
+def token_input(call):
+    if call.data == 'token_input':
+        bot.send_message(call.message.chat.id,
+                         'Введи токен',
+                         reply_markup=keyboard_generator.generate_default_keyboard(cancel_button,))
+        db.set_state(call.message.from_user.username,
+                     stateworker.States.S_TOKEN_INPUT_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     call.message.chat.id)
+
+
+@bot.message_handler(func=lambda message: db.get_state(message.chat.id)[0] == stateworker.States.S_TOKEN_INPUT_MENU.value)
+def token_menu(message):
+    follow_id = db.get_user_id_by_token(message.text)
+    print(follow_id)
+    if message.text and follow_id is not None:
+        bot.send_message(message.chat.id,
+                         'Успешно',
+                         reply_markup=keyboard_generator.settings_menu_keyboard)
+        db.set_state(message.from_user.username,
+                     stateworker.States.S_SETTINGS_MENU.value,
+                     time.strftime('%d/%m/%y, %X'),
+                     message.chat.id)
+
+
+    elif message.text == cancel_button:
+        bot.send_message(message.chat.id,
+                         'Настройки',
+                         reply_markup=keyboard_generator.settings_menu_keyboard)
+    else:
+        bot.send_message(message.chat.id,
+                         'НЕ успешно',
+                         reply_markup=keyboard_generator.generate_default_keyboard(cancel_button,))
 
 
 bot.polling()

@@ -14,6 +14,7 @@ class States(Enum):
 
     S_SETTINGS_MENU = "settings_menu"
     S_CHANGE_GROUP = "change_group"
+    S_TOKEN_INPUT_MENU = "token_input"
 
     S_INPUT_LINK = "input_link"
     S_INPUT_PASSWORD = "input_password"

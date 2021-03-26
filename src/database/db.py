@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#!/usr/bin/python3.8.5
+# !/usr/bin/python3.8.5
 
 from datetime import datetime, timedelta
 
@@ -245,3 +245,18 @@ def get_blocked_user(user_id):
         return 'False'
     else:
         return q
+
+
+def get_user_id_by_token(token):
+    try:
+        conn = get_connection()
+        c = conn.cursor()
+        c.execute(
+            'SELECT user_id, user_token FROM users WHERE user_token = %s',
+            (token,)
+        )
+        q = c.fetchone()
+        return q
+    except TypeError:
+        return 'Not exists'
+

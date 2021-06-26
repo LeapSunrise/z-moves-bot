@@ -5,3 +5,7 @@ __pycache__
 *.iml
 .idea
 venv
+
+EnvironmentVariables.txt
+dbmanage.txt
+

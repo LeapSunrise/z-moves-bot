@@ -135,7 +135,8 @@ class Schedule:
                                 schedule_body += subject_link
 
             hotlines = db.get_hotlines(user_id, user_group)
-            if hotlines is not None:
+            print(hotlines)
+            if hotlines != 'lox1':
                 hotlines_body += f"{sep}\n\n👺 Хотлайны:\n\n"
                 for i in hotlines:
                     hotlines_body += f"<i>{i[1]}</i> - {i[2]} - <b>{i[3].strftime('%d.%m')}</b> "

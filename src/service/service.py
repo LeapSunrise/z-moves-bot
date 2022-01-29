@@ -20,7 +20,7 @@ def dynamic_menu_links_inline_keyboard_generator(chat_id):
     user_group = db.get_user_info(chat_id)[2]
     keyboard = telebot.types.InlineKeyboardMarkup()
     keyboard.add(inline_add_link_button)
-    if db.get_links(chat_id, user_group) is not None:
+    if db.get_links(chat_id) is not None:
         keyboard.add(inline_change_link_button)
         keyboard.add(inline_remove_link_button)
     return keyboard
@@ -36,7 +36,7 @@ def dynamic_menu_hotlines_inline_keyboard_generator(chat_id):
     user_group = db.get_user_info(chat_id)[2]
     keyboard = telebot.types.InlineKeyboardMarkup()
     keyboard.add(inline_add_hotline_button)
-    if db.get_hotlines(chat_id, user_group) is not None:
+    if db.get_hotlines(chat_id) is not None:
         keyboard.add(inline_change_hotline_button)
         keyboard.add(inline_remove_hotline_button)
     return keyboard
@@ -89,10 +89,10 @@ def generate_inline_linked_subjects_to_change(chat_id):
     """
     user_group = db.get_user_info(chat_id)[2]
     keyboard = telebot.types.InlineKeyboardMarkup()
-    if db.get_links(chat_id, user_group) is not None:
-        for item in db.get_links(chat_id, user_group):
+    if db.get_links(chat_id) is not None:
+        for item in db.get_links(chat_id):
             keyboard.add(telebot.types.InlineKeyboardButton(text=f"{item[2]} - {item[1]}",
-                                                            callback_data=f"link_ch_{item[6]}"))
+                                                            callback_data=f"link_ch_{item[5]}"))
         keyboard.add(inline_links_first_back_button)
         return keyboard
 
@@ -134,10 +134,10 @@ def generate_inline_linked_subjects_to_remove(chat_id):
     """
     user_group = db.get_user_info(chat_id)[2]
     keyboard = telebot.types.InlineKeyboardMarkup()
-    if db.get_links(chat_id, user_group) is not None:
-        for item in db.get_links(chat_id, user_group):
+    if db.get_links(chat_id) is not None:
+        for item in db.get_links(chat_id):
             keyboard.add(telebot.types.InlineKeyboardButton(text=f"{item[2]} - {item[1]}",
-                                                            callback_data=f"link_rm_{item[6]}"))
+                                                            callback_data=f"link_rm_{item[5]}"))
         keyboard.add(inline_links_first_back_button)
         return keyboard
     else:

@@ -86,7 +86,8 @@ lorem_ipsum = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do e
 def hotlines_reply(user_id):
     hotlines_body = ''
     user_group = db.get_user_info(user_id)[2]
-    hotlines = db.get_hotlines(user_id, user_group)
+    hotlines = db.get_hotlines(user_id)
+    print(hotlines)
     if hotlines is not None:
         hotlines_body += f"👺 Хотлайны:\n\n"
         for i in hotlines:
@@ -106,7 +107,7 @@ def hotlines_reply(user_id):
 def links_reply(user_id):
     links_body = ''
     user_group = db.get_user_info(user_id)[2]
-    links = db.get_links(user_id, user_group)
+    links = db.get_links(user_id)
     if links is not None:
         links_body += f"🔗 Твои ссылки: \n\n"
         for i in links:

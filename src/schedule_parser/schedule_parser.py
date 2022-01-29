@@ -115,7 +115,7 @@ class Schedule:
             hotlines_body = ''
             sep = '_' * 35
 
-            subject_links = db.get_links(user_id, user_group)
+            subject_links = db.get_links(user_id)
 
             for lesson in data:
                 if lesson['lesson_week'] == str(week) and lesson['day_number'] == str(day):

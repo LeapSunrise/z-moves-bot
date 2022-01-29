@@ -68,7 +68,6 @@ def start_message(message):
                          parse_mode='HTML')
         db.register_user(message.chat.id,
                          message.from_user.username,
-                         service.token_generator(16),
                          stateworker.States.S_REGISTRATION.value,
                          time.strftime('%d/%m/%y, %X'),
                          time.strftime('%d/%m/%y, %X'))
@@ -638,12 +637,11 @@ def input_hotline(message):
 
     elif message.text == confirm_button:
         user_hotlines_dict[message.chat.id]['addition_date'] = time.strftime('%d/%m/%y, %X')
-        user_group = db.get_user_info(message.chat.id)[2]
+
         db.add_hotline(message.chat.id,
                        user_hotlines_dict[message.chat.id]['subject'],
                        user_hotlines_dict[message.chat.id]['description'],
                        user_hotlines_dict[message.chat.id]['date'],
-                       user_group,
                        user_hotlines_dict[message.chat.id]['addition_date'])
         bot.send_message(message.chat.id,
                          f"Хотлайн для «<b>{user_hotlines_dict[message.chat.id]['subject']}</b>» успешно добавлен.\n\n"
@@ -739,7 +737,6 @@ def input_link(message):
                     user_links_dict[message.chat.id]['subject_type'],
                     user_links_dict[message.chat.id]['link'],
                     user_links_dict[message.chat.id]['password'],
-                    db.get_user_info(message.chat.id)[2],
                     user_links_dict[message.chat.id]['addition_time'])
         db.set_state(message.from_user.username,
                      stateworker.States.S_MAIN_MENU.value,
